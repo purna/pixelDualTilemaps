@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeamlessDual Tilemap Editor Pro</title>
+    <!-- Fonts & Icons -->
+    <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+    <!-- Custom Font -->
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            src: url('fonts/inter-normal.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Press Start 2P';
+            src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    <!-- Load Press Start 2P font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Local Font Awesome Implementation -->
+    <link rel="stylesheet" href="fonts/fontawesome-free-6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/tutorials.css">
+
+</head>
+
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="logo-area">
+            <h1>Dual Tilemap Editor</h1>
+            <span class="badge">Seamless Pro V1.0</span>
+        </div>
+
+        <div class="header-controls">
+            <button id="undoBtn" class="btn icon-only" title="Undo (Ctrl+Z)"
+                data-tooltip="**Undo**\n--Reverse last action--\nShortcut: `Ctrl+Z`"><i
+                    class="fas fa-undo"></i></button>
+            <button id="redoBtn" class="btn icon-only" title="Redo (Ctrl+Y)"
+                data-tooltip="**Redo**\n--Restore undone action--\nShortcut: `Ctrl+Y`"><i
+                    class="fas fa-redo"></i></button>
+
+            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
+
+            <div class="zoom-controls-header">
+                <button id="zoomOutBtn" class="btn icon-only" title="Zoom Out (Ctrl/-)"><i
+                        class="fas fa-minus"></i></button>
+                <span id="zoomDisplay" class="zoom-display">1x</span>
+                <button id="zoomInBtn" class="btn icon-only" title="Zoom In (Ctrl/+)"><i
+                        class="fas fa-plus"></i></button>
+                <button id="zoomResetBtn" class="btn icon-only" title="Reset Zoom (0)"><i
+                        class="fas fa-compress-arrows-alt"></i></button>
+            </div>
+
+            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
+
+            <button id="saveBtn" class="btn primary"
+                data-tooltip="**Save Project**\n--Save your work--\n\nSave your current tile map and settings to a file">
+                <i class="fas fa-save"></i> Save
+            </button>
+            <button id="loadBtn" class="btn"
+                data-tooltip="**Load Project**\n--Open saved work--\n\nLoad a previously saved tile map project">
+                <i class="fas fa-folder-open"></i> Load
+            </button>
+            <button id="exportBtn" class="btn"
+                data-tooltip="**Export**\n--Export your tiles--\n\nExport your tile maps as image files">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-container">
+
+        <!-- LEFT TOOLBAR -->
+        <aside class="toolbar" id="tool-buttons">
+            <button class="tool-btn active" data-tool="pencil" title="Pencil (P)"
+                data-tooltip="**Pencil Tool**\n--Freehand drawing--\nShortcut: P">
+                <i class="fas fa-pencil-alt"></i>
+                <span>Pencil</span>
+            </button>
+            <button class="tool-btn" data-tool="brush" title="Brush (B)"
+                data-tooltip="**Brush Tool**\n--Smooth painting--\nShortcut: B">
+                <i class="fas fa-paint-brush"></i>
+                <span>Brush</span>
+            </button>
+            <button class="tool-btn" data-tool="eraser" title="Eraser (E)"
+                data-tooltip="**Eraser Tool**\n--Remove pixels--\nShortcut: E">
+                <i class="fas fa-eraser"></i>
+                <span>Eraser</span>
+            </button>
+            <div class="separator"></div>
+            <button class="tool-btn" data-tool="eyedropper" title="Color Picker (I)"
+                data-tooltip="**Color Picker**\n--Sample colors--\nShortcut: I">
+                <i class="fas fa-eye-dropper"></i>
+                <span>Picker</span>
+            </button>
+
+            <div class="toolbar-spacer"></div>
+
+
+            <button class="tool-btn" id="layersBtn" title="Layers (L)"
+                data-tooltip="**Layer Management**\n--Organize your artwork--\n\n• Add new layers\n• Delete layers\n• Toggle visibility\n• Reorder layers\n\nCreate complex artwork with multiple layers">
+                <i class="fas fa-layer-group"></i>
+                <span>Layers</span>
+            </button>
+            <div class="separator"></div>
+            <button class="tool-btn" id="settingsBtn" title="Settings"
+                data-tooltip="**Settings**\n--Configure preferences--\n\n• Grid visibility\n• Background color\n• Canvas size\n• Auto-save options\n\nToggle tooltips on/off here">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            <div class="separator"></div>
+
+            <button class="tool-btn" id="tilemapBtn" title="Tilemap"
+                data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\n• View 3x3 tile grid\n• Select active tiles\n• Edit seamless patterns\n\nCreate repeating tile patterns">
+                <i class="fas fa-th"></i>
+                <span>Tilemap</span>
+            </button>
+        </aside>
+
+        <!-- CENTER WORKSPACE -->
+        <div class="workspace">
+            <div class="controls-container">
+                <h1>Seamless Tile Editor</h1>
+            </div>
+
+            <div class="tile-grid-container">
+                <div class="tile-grid">
+                    <!-- The 3x3 canvas grid -->
+                    <!-- Row 1 -->
+                    <canvas id="preview-0-0" width="512" height="512"></canvas>
+                    <canvas id="preview-0-1" width="512" height="512"></canvas>
+                    <canvas id="preview-0-2" width="512" height="512"></canvas>
+                    <!-- Row 2 -->
+                    <canvas id="preview-1-0" width="512" height="512"></canvas>
+                    <canvas id="editor-canvas" width="512" height="512"></canvas>
+                    <canvas id="preview-1-2" width="512" height="512"></canvas>
+                    <!-- Row 3 -->
+                    <canvas id="preview-2-0" width="512" height="512"></canvas>
+                    <canvas id="preview-2-1" width="512" height="512"></canvas>
+                    <canvas id="preview-2-2" width="512" height="512"></canvas>
+                </div>
+            </div>
+
+            <!-- Floating Brush Controls Overlay -->
+            <div class="brush-controls-overlay">
+                <div class="brush-controls">
+                    <label for="brush-size">Brush Size:</label>
+                    <input type="range" id="brush-size" min="0" max="15" value="0" hidden="hidden">
+                    <span id="brush-size-value" class="brush-size-display">1</span>
+                    <div class="preset-sizes" id="floating-brush-presets">
+                        <button class="preset-btn" data-size="0">1</button>
+                        <button class="preset-btn" data-size="1">3</button>
+                        <button class="preset-btn" data-size="3">7</button>
+                        <button class="preset-btn" data-size="5">11</button>
+                    </div>
+
+                    <!-- Add Seperator-->
+
+
+                    <label for="brush-size">Opacity:</label>
+                    <input type="range" id="opacity-size" min="0" max="100" value="100" hidden="hidden">
+                    <div class="preset-sizes opacity-presets">
+                        <button class="preset-btn opacity-btn" data-opacity="0.25">25%</button>
+                        <button class="preset-btn opacity-btn" data-opacity="0.5">50%</button>
+                        <button class="preset-btn opacity-btn" data-opacity="0.75">75%</button>
+                        <button class="preset-btn opacity-btn active" data-opacity="1">100%</button>
+                    </div>
+                </div>
+
+            </div>
+
+
+
+
+            <div id="info-box" class="info-box">
+                <p><strong>Instructions:</strong> Drag seamlessly across the 9 tiles to edit the central tile.
+                    Drawing now only stops when you release the mouse button or lift your finger.
+                    Use the toolbar on the left to switch between brush and eraser tools.</p>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL (SLIDE OUT) -->
+        <aside class="right-panel" id="side-panel">
+
+            <!-- Color Palette Section -->
+            <div id="panel-palette" class="panel-section">
+                <div class="section-title">
+                    <span>Color Palette</span>
+                    <div style="display:flex; gap:5px;">
+                        <button id="importPaletteUrlBtn" title="Import from Coolors URL"
+                            style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
+                            <i class="fas fa-link"></i>
+                        </button>
+                        <button id="saveColorBtn" title="Save Color"
+                            style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="color-controls">
+                    <input type="color" id="colorPicker" value="#282828"
+                        style="width:30px; height:30px; padding:0; border:none; background:none;">
+                    <input type="text" id="colorHex" value="#282828"
+                        style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); width:70px; padding:4px; font-family:monospace;">
+                </div>
+                <div id="palette-container" class="palette-grid">
+                    <!-- Palette swatches will be added here -->
+                </div>
+            </div>
+
+            <!-- Layers Section -->
+            <div id="panel-layers" class="panel-section hidden">
+                <div class="section-title">
+                    <span>Layers</span>
+                    <button id="addLayerBtn"
+                        style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                </div>
+                <div id="layers-list" class="layers-list" style="max-height: 400px;">
+                    <!-- Layers will be added here -->
+                </div>
+            </div>
+
+
+
+            <!-- Tool Options Section -->
+            <div id="panel-tool-options" class="panel-section">
+                <div class="section-title"><span>Tools Options</span></div>
+                <div style="margin-bottom:10px; display: block;" id="panel-tool-control">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="font-size:11px; color:var(--text-secondary);">
+                            <span id="brushSizeLabelPanel">Brush Size</span>
+                        </label>
+                        <span style="font-size:11px; color:var(--text-secondary);" id="brushSizeDisplay">1</span>
+                    </div>
+                    <input type="range" id="brushSizeSlider" min="0" max="15" value="0" style="width:100%;">
+
+                </div>
+                <div style="margin-bottom:10px;" id="panel-opacity-control">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="font-size:11px; color:var(--text-secondary);">
+                            <span>Opacity</span>
+                        </label>
+                        <span style="font-size:11px; color:var(--text-secondary);" id="opacityDisplay">100</span>
+                    </div>
+                    <input type="range" id="opacitySlider" min="0" max="100" value="100" style="width:100%;">
+                </div>
+            </div>
+
+            <div id="panel-tool-canvas" class="panel-section hidden">
+                <div class="section-title"><span>Canvas Options</span></div>
+                <div class="canvas-size-controls">
+                    <div class="size-input-group">
+                        <input type="number" id="widthInput" value="32" min="4" max="512" placeholder="Width"
+                            class="size-input">
+                        <span class="size-separator">×</span>
+                        <input type="number" id="heightInput" value="32" min="4" max="512" placeholder="Height"
+                            class="size-input">
+                    </div>
+                    <button id="apply-canvas-resize" class="btn btn-apply-size" title="Apply Canvas Resize">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        <span>Apply</span>
+                    </button>
+                </div>
+                <div class="size-description">
+                    Set the canvas dimensions (4-512 pixels)
+                </div>
+            </div>
+
+            <!-- Tilemap Panel Section -->
+            <div id="panel-tilemap" class="panel-section hidden">
+                <div class="section-title">
+                    <span>Tilemap Manager</span>
+                    <button id="tilemapSettingsBtn" title="Tilemap Settings"
+                        style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                <div class="tilemap-container">
+                    <div class="tilemap-grid" id="tilemapGrid">
+                        <!-- 3x3 grid of tilemap squares connected to actual canvases -->
+                        <div class="tilemap-square" data-row="0" data-col="0" data-canvas="preview-0-0">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="0" data-col="1" data-canvas="preview-0-1">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="0" data-col="2" data-canvas="preview-0-2">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="1" data-col="0" data-canvas="preview-1-0">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square center" data-row="1" data-col="1" data-canvas="editor-canvas">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="1" data-col="2" data-canvas="preview-1-2">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="2" data-col="0" data-canvas="preview-2-0">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="2" data-col="1" data-canvas="preview-2-1">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                        <div class="tilemap-square" data-row="2" data-col="2" data-canvas="preview-2-2">
+                            <canvas width="32" height="32"></canvas>
+                        </div>
+                    </div>
+                    <div class="tilemap-info">
+                        <p style="font-size:10px; color:var(--text-secondary); margin-top:8px; text-align:center;">
+                            Select a tile to make it active
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- Floating Toggle - moved outside main-container -->
+    <div id="panel-toggle" title="Toggle Panel">
+        <i class="fas fa-chevron-right"></i>
+    </div>
+
+    <!-- UNIFIED SETTINGS MODAL -->
+    <div class="modal-overlay" id="unified-settings-modal">
+        <div class="modal">
+            <header>
+                <div class="modal-title">
+                    <i class="fas fa-cog"></i> Settings
+                </div>
+                <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:15px;">
+                    Configure your Tilemap Studio preferences
+                </div>
+
+                <!-- Settings Tabs -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="general" id="tab-general">
+                        <i class="fas fa-sliders-h"></i> General
+                    </button>
+                    <button class="settings-tab" data-tab="scene" id="tab-scene">
+                        <i class="fas fa-image"></i> Tilemaps
+                    </button>
+                    <button class="settings-tab" data-tab="export" id="tab-export">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="settings-tab" data-tab="tutorial" id="tab-tutorial">
+                        <i class="fas fa-graduation-cap"></i> Tutorial
+                    </button>
+                </div>
+            </header>
+            <!-- Scrollable Content Wrapper -->
+            <div class="modal-content-wrapper">
+                <!-- General Settings Tab -->
+                <div class="settings-tab-content active" data-tab-content="general">
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <div class="section-heading">Display Settings</div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-border" checked>
+                                    Show Border
+                                </label>
+                            </div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-tooltips" checked>
+                                    Show Tooltips
+                                </label>
+                            </div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-helpers" checked>
+                                    Show Helpers
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <div class="section-heading">Application Settings</div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-darkmode" checked>
+                                    Dark Mode
+                                </label>
+                            </div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-autosave" checked>
+                                    Auto Save
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scene Settings Tab -->
+                <div class="settings-tab-content" data-tab-content="scene">
+                    <div class="scene-settings-content">
+                        <div class="settings-section">
+                            <div class="section-heading">Tilemap Display</div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-grid" checked>
+                                    Show Grid
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <div class="section-heading">Background Settings</div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    Default Background
+                                </label>
+                                <div class="bg-control-container">
+                                    <!-- Background mode toggle -->
+                                    <div class="bg-mode-toggle" role="tablist" aria-label="Background mode">
+                                        <button class="bg-mode-btn active" data-mode="color" role="tab"
+                                            aria-selected="true">
+                                            <i class="fas fa-palette"></i>
+                                            <span>Color</span>
+                                        </button>
+                                        <button class="bg-mode-btn" data-mode="transparent" role="tab"
+                                            aria-selected="false">
+                                            <i class="fas fa-eye-slash"></i>
+                                            <span>Transparent</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Color picker section -->
+                                    <div class="bg-color-section" id="bg-color-section">
+                                        <div class="color-picker-group">
+                                            <input type="color" id="setting-bg-color" value="#ffffff" class="bg-color-input"
+                                                aria-label="Background color">
+                                            <div class="color-preview" id="color-preview">
+                                                <div class="preview-box" id="preview-box"></div>
+                                                <span class="color-value" id="color-value">#ffffff</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Transparent preview section -->
+                                    <div class="bg-transparent-section hidden" id="bg-transparent-section">
+                                        <div class="transparent-preview">
+                                            <div class="transparent-grid"></div>
+                                            <span class="transparent-label">Background will be transparent</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    Background Color:
+                                    <input type="color" id="setting-background-color" value="#1a1a2e">
+                                </label>
+                            </div>
+                        <!-- Canvas Size Settings -->
+                        <div class="property-group">
+                            <label class="property-label">Canvas Size</label>
+                            <div class="canvas-size-controls">
+                                <div class="size-input-group">
+                                    <input type="number" id="modal-canvas-width" value="32" min="4" max="1024"
+                                        placeholder="Width" class="size-input">
+                                    <span class="size-separator">×</span>
+                                    <input type="number" id="modal-canvas-height" value="32" min="4" max="1024"
+                                        placeholder="Height" class="size-input">
+                                </div>
+                                <button id="modal-apply-canvas-resize" class="btn btn-apply-size"
+                                    title="Apply Canvas Resize">
+                                    <i class="fas fa-expand-arrows-alt"></i>
+                                    <span>Apply</span>
+                                </button>
+                            </div>
+                            <div class="size-description">
+                                Set the canvas dimensions (4-1024 pixels)
+                            </div>
+                        </div>
+                        <!-- Default Size Presets -->
+                        <div class="property-group">
+                            <label class="property-label">Default Sizes</label>
+                            <div class="default-size-presets">
+                                <button class="preset-btn" data-width="24" data-height="24">24×24</button>
+                                <button class="preset-btn" data-width="36" data-height="36">36×36</button>
+                                <button class="preset-btn" data-width="48" data-height="48">48×48</button>
+                                <button class="preset-btn" data-width="128" data-height="128">128×128</button>
+                                <button class="preset-btn" data-width="512" data-height="512">512×512</button>
+                                <button class="preset-btn" data-width="1024" data-height="1024">1024×1024</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <!-- Export Settings Tab -->
+                <div class="settings-tab-content" data-tab-content="export">
+                    <div class="export-settings-content">
+                        <div class="settings-section">
+                            <div class="section-heading">Export Options</div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="setting-export-transparent" checked>
+                                    Export with Transparent Background
+                                </label>
+                            </div>
+                            <div class="property-group">
+                                <label class="property-label">
+                                    Export Resolution:
+                                    <select id="setting-export-resolution"
+                                        style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;">
+                                        <!-- Game Asset Sizes -->
+                                        <option value="24x24">24×24 - Game Icon</option>
+                                        <option value="36x36">36×36 - Game Icon</option>
+                                        <option value="48x48">48×48 - Game Icon</option>
+                                        <option value="128x128">128×128 - Game Sprite</option>
+                                        <option value="512x512">512×512 - Game Texture</option>
+                                        <option value="1024x1024">1024×1024 - High-res Texture</option>
+
+                                        <!-- Standard Resolutions -->
+                                        <option value="1920x1080">1920×1080 - Full HD</option>
+                                        <option value="2560x1440">2560×1440 - 2K</option>
+                                        <option value="3840x2160">3840×2160 - 4K</option>
+                                        <option value="custom">Custom Size</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="property-group" id="custom-resolution-group" style="display: none;">
+                                <label class="property-label">
+                                    Custom Width:
+                                    <input type="number" id="setting-custom-width" value="1920" min="100" max="8000">
+                                </label>
+                                <label class="property-label">
+                                    Custom Height:
+                                    <input type="number" id="setting-custom-height" value="1080" min="100" max="8000">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <div class="section-heading">Settings Management</div>
+                            <div class="property-group"
+                                style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                                <button id="exportSettingsBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
+                                    <i class="fas fa-cloud-download-alt"></i> Export Defaults
+                                </button>
+                                <button id="saveToBrowserBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
+                                    <i class="fas fa-save"></i> Save to Browser
+                                </button>
+                                <button id="loadFromBrowserBtn" class="btn secondary" style="width: 100%;">
+                                    <i class="fas fa-download"></i> Load from Browser
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tutorial Settings Tab -->
+                <div class="settings-tab-content" data-tab-content="tutorial">
+                    <div class="settings-content">
+
+                        <div class="settings-section">
+                            <div class="section-heading"> Tutorial Settings </div>
+
+                            <div class="property-group">
+                                <label class="property-label">
+                                    <input type="checkbox" id="enableTutorialsSettings" checked>
+                                    Enable Tutorials
+                                </label>
+                                <div
+                                    style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; margin-left: 30px;">
+                                    Show interactive tutorials on startup
+                                </div>
+
+                                <label class="property-label">
+                                    <input type="checkbox" id="showTutorialHints" checked>
+                                    Show Tutorial Hints
+                                </label>
+                                <div
+                                    style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; margin-left: 30px;">
+                                    Display helpful hints and tooltips
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                        <div class="property-group"
+                            style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                            <button id="startTutorialBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
+                                <i class="fas fa-graduation-cap"></i> Start Tutorial
+                            </button>
+                            <button id="resetTutorialBtn" class="btn secondary" style="width: 100%;">
+                                <i class="fas fa-redo"></i> Reset Tutorial Progress
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer>
+                <div class="modal-actions">
+                    <button class="btn" id="btn-settings-reset">Reset</button>
+                    <button class="btn" id="btn-settings-close">Close</button>
+                    <button class="btn primary" id="btn-settings-save">Save Settings</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+    <input type="file" id="paletteFileInput" accept=".ase" style="display: none;">
+
+
+    <!-- Core modules -->
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/dom.js"></script>
+    <script src="js/notifications.js"></script>
+
+    <!-- UI Components -->
+    <script src="js/tooltip.js"></script>
+
+    <!-- Specialized modules -->
+    <script src="js/tilemap-core.js"></script>
+    <script src="js/frame-manager.js"></script>
+    <script src="js/palette-manager.js"></script>
+    <script src="js/layer-manager.js"></script>
+    <script src="js/tool-manager.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script src="js/tilemap-manager.js"></script>
+    <script src="js/dual-grid-manager.js"></script>
+    <script src="js/settings-manager.js"></script>
+    <script src="js/zoom-manager.js"></script>
+    <script src="js/tutorialConfig.js"></script>
+    <script src="js/tutorialSystem.js"></script>
+
+    <!-- Input handling -->
+    <script src="js/input-handler.js"></script>
+    <script src="js/ui-manager.js"></script>
+
+    <!-- Main application -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,928 @@
+/* Settings.css - Dedicated styles for settings modal and related components */
+
+
+/* SETTINGS PANEL — Improved Look */
+.settings-content {
+    background: var(--bg-medium);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.settings-content .property-group {
+    background: var(--bg-light);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.settings-content .property-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.settings-content input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+.settings-content input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+
+/* Specific styles for the HTML settings modal structure */
+#settings-modal.modal-overlay {
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.8);
+}
+
+#settings-modal .modal {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#settings-modal .modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent-primary);
+}
+
+#settings-modal .settings-content {
+    background: var(--bg-medium);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+}
+
+#settings-modal .property-group {
+    background: var(--bg-light);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+#settings-modal .property-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+#settings-modal input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+#settings-modal input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+#settings-modal .modal-actions {
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+#settings-modal .modal-actions .btn {
+    min-width: 80px;
+}
+
+/* Settings Modal Structure */
+.settings-content,
+.scene-settings-content,
+.export-settings-content {
+    background: var(--bg-medium);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.settings-content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.scene-settings-content,
+.export-settings-content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Settings Tabs */
+.settings-tabs {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.settings-tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+}
+
+.settings-tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-light);
+}
+
+.settings-tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.settings-tab-content {
+    display: none;
+    padding: 10px 0;
+}
+
+.settings-tab-content.active {
+    display: block;
+}
+
+/* Property Groups */
+.property-group {
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.property-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+/* Settings Content Specific Styles */
+.settings-content .property-label,
+.scene-settings-content .property-label {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.settings-content input[type="checkbox"],
+.scene-settings-content input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+/* Slider property groups */
+.property-group.has-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.property-group.has-slider .property-label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.property-group.has-slider input[type="range"] {
+    width: 100%;
+    margin-top: 0;
+}
+
+.settings-content input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+/* Export Settings Specific */
+.export-settings-content .property-label input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.export-settings-content .property-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Export Transparent Checkbox Fix */
+#setting-export-transparent {
+    margin-right: 8px;
+    vertical-align: middle;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+    width: 16px;
+    height: 16px;
+}
+
+#setting-export-transparent:checked {
+    accent-color: var(--accent-primary);
+}
+
+#setting-export-transparent+label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+/* Settings Section Grouping */
+.settings-section {
+    margin-bottom: 20px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-light);
+}
+
+.section-heading {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Ensure proper spacing between grouped settings */
+.settings-section .property-group {
+    margin-bottom: 12px;
+    padding: 8px 0;
+}
+
+.settings-section .property-group:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Tutorial Tab Specific Styles */
+.settings-tab-content[data-tab-content="tutorial"] .property-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.settings-tab-content[data-tab-content="tutorial"] .setting-label {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.settings-tab-content[data-tab-content="tutorial"] div[style*="font-size: 11px"] {
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    margin-top: 4px !important;
+    margin-left: 30px !important;
+}
+
+.settings-tab-content[data-tab-content="tutorial"] input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.settings-tab-content[data-tab-content="tutorial"] button {
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+/* Setting Descriptions */
+.setting-description {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    margin-left: 30px;
+}
+
+/* Scene Settings Specific */
+.scene-settings-content input[type="color"] {
+    width: 60px;
+    height: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.scene-settings-content select {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.scene-settings-content input[type="number"] {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    width: 100px;
+}
+
+/* Export Settings Specific */
+.export-settings-content .property-group:first-child {
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Settings Modal Scrollbar */
+.modal .scene-settings-content::-webkit-scrollbar,
+.modal .settings-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal .scene-settings-content::-webkit-scrollbar-track,
+.modal .settings-content::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+    border-radius: 4px;
+}
+
+.modal .scene-settings-content::-webkit-scrollbar-thumb,
+.modal .settings-content::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+.modal .scene-settings-content::-webkit-scrollbar-thumb:hover,
+.modal .settings-content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-secondary);
+}
+
+/* Settings Modal Scrollbar for Firefox */
+.modal .scene-settings-content,
+.modal .settings-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) var(--bg-dark);
+}
+
+
+
+/* Fix inconsistent checkbox styling */
+.setting-label input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* Standardize button styling in settings */
+.settings-content button,
+.scene-settings-content button,
+.export-settings-content button {
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+/* Fix Export checkbox formatting specifically */
+.export-settings-content .property-label input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.export-settings-content .property-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Ensure all checkboxes in settings have consistent styling */
+.settings-content input[type="checkbox"],
+.scene-settings-content input[type="checkbox"],
+.export-settings-content input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+/* Specifically target the export transparent checkbox */
+#setting-export-transparent {
+    margin-right: 8px;
+    vertical-align: middle;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+    /* Match other checkboxes */
+    width: 16px;
+    height: 16px;
+}
+
+/* Ensure the checkbox appears green like others */
+#setting-export-transparent:checked {
+    accent-color: var(--accent-primary);
+}
+
+/* Style the label container for consistency */
+#setting-export-transparent+label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+/* Standardize all checkbox sizes */
+.settings-content input[type="checkbox"],
+.scene-settings-content input[type="checkbox"],
+.export-settings-content input[type="checkbox"],
+#setting-export-transparent {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Style the label for export transparent checkbox */
+#setting-export-transparent+label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+/* Ensure the property group containing export transparent has consistent styling */
+.export-settings-content .property-group:first-child {
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Fix tutorial tab text styling to match other tabs */
+.settings-tab-content[data-tab-content="tutorial"] .property-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.settings-tab-content[data-tab-content="tutorial"] .setting-label {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.settings-tab-content[data-tab-content="tutorial"] div[style*="font-size: 11px"] {
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    margin-top: 4px !important;
+    margin-left: 30px !important;
+}
+
+/* Fix tutorial tab checkbox styling */
+.settings-tab-content[data-tab-content="tutorial"] input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Fix tutorial tab button styling */
+.settings-tab-content[data-tab-content="tutorial"] button {
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+/* Settings section styling */
+.settings-section {
+    margin-bottom: 20px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-light);
+}
+
+
+.section-heading {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Ensure proper spacing between grouped settings */
+.settings-section .property-group {
+    margin-bottom: 12px;
+    padding: 8px 0;
+}
+
+.settings-section .property-group:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+
+
+/* SETTINGS MODAL */
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+}
+
+/* tilemap-styles.css (Add these styles) */
+
+/* --- SETTINGS MODAL STYLING (Professional Look and Pop-up Fix) --- */
+
+.settings-panel {
+    /* ... existing styles (background, border, padding, max-width, etc.) ... */
+    position: relative;
+    display: flex;
+    /* Make it a flex container */
+    flex-direction: column;
+    /* Stack children vertically */
+
+    /* Initial state for pop-up animation */
+    opacity: 0;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 0.3s ease-out;
+}
+
+.settings-panel.is-open {
+    /* Target state for pop-up animation */
+    opacity: 1;
+    transform: scale(1);
+}
+
+.settings-panel h2 {
+    color: var(--accent-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+/* Close Button Styling */
+.close-settings {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    /* Slightly smaller icon */
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+    transition: color 0.2s;
+}
+
+.close-settings:hover {
+    color: var(--accent-secondary);
+}
+
+/* Settings Groups and Items Layout */
+.settings-content {
+    flex-grow: 1;
+    padding-right: 10px;
+    margin-right: -10px;
+    overflow-y: auto;
+    /* Enable scrolling for content */
+}
+
+.settings-group {
+    border-bottom: 1px dashed var(--border-color);
+    padding: 15px 0;
+    margin-bottom: 15px;
+}
+
+.settings-group:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.settings-group h3 {
+    color: var(--accent-tertiary);
+    font-size: 1.1em;
+    font-weight: 500;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.setting-item:last-child {
+    margin-bottom: 0;
+}
+
+.setting-label {
+    font-weight: 400;
+    color: var(--text-primary);
+    flex-grow: 1;
+    user-select: none;
+    cursor: pointer;
+    /* Indicate it's clickable */
+}
+
+.setting-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-control-group {
+    /* For the Canvas WxH inputs */
+    gap: 5px;
+}
+
+/* Custom Checkbox Styling (Highly professional look) */
+.setting-control input[type="checkbox"] {
+    /* Hide the default checkbox */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-medium);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.setting-control input[type="checkbox"]:checked {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 5px var(--border-glow);
+}
+
+.setting-control input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.3);
+}
+
+.setting-control input[type="checkbox"]::after {
+    content: '\f00c';
+    /* Font Awesome checkmark icon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 12px;
+    color: var(--bg-dark);
+    /* Dark color for checkmark */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.2s ease;
+}
+
+.setting-control input[type="checkbox"]:checked::after {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Range Slider Value Display */
+.setting-control .range-value {
+    color: var(--accent-tertiary);
+    font-weight: bold;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Action Button Group */
+.settings-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 20px;
+    flex-shrink: 0;
+    /* Prevent the actions bar from shrinking */
+}
+
+.settings-actions .btn {
+    min-width: 120px;
+}
+
+/* ************ Existing styles for input[type="number"] and select ************ */
+
+/* Ensure the existing professional input styles are included/retained. They were at the end of the file. */
+
+/* Enhanced form styling for settings modal */
+.setting-control input[type="number"] {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    width: 80px;
+    text-align: center;
+}
+
+.setting-control input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 8px var(--border-glow);
+}
+
+.setting-control select {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    min-width: 100px;
+    cursor: pointer;
+}
+
+.setting-control select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 8px var(--border-glow);
+}
+
+#settings-modal .modal {
+    position: relative;
+}
+
+/* Canvas Size Controls in Modal */
+.canvas-size-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.size-input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-grow: 1;
+}
+
+.size-input {
+    width: 60px;
+    padding: 6px 10px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.size-separator {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.btn-apply-size {
+    background: var(--accent-primary);
+    color: var(--text-dark);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-apply-size:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
+}
+
+.size-description {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    margin-left: 0;
+    padding-left: 0;
+}
+
+/* Default Size Presets */
+.default-size-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.preset-btn {
+    background: var(--bg-medium);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    background: var(--accent-primary);
+    color: var(--text-dark);
+    border-color: var(--accent-primary);
+}
+
+.preset-btn:active {
+    transform: scale(0.95);
+}

@@ -1,0 +1,372 @@
+{
+  "tilemap_type": "4x4_dual_grid",
+  "total_tiles": 16,
+  "description": "A dual grid tilemap system where tiles connect based on neighboring content. Each tile represents a different configuration of filled vs empty adjacent cells.",
+  "grid_layout": "4_columns_x_4_rows",
+  "tile_indexing": "left_to_right_top_to_bottom (0-15)",
+  
+  "tiles": [
+    {
+      "index": 0,
+      "position": "row_0_col_0",
+      "name": "bottom_left_corner",
+      "overlaps": ["bottom", "left"],
+      "neighbors": {
+         "top-left": false,
+        "top-right": false,
+        "bottom-left": true,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": false,
+        "top-right": false,
+        "middle-left": true,
+        "middle-right": false,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": false
+      }
+    },
+    {
+      "index": 1,
+      "position": "row_0_col_1",
+      "name": "right_edge",
+      "overlaps": ["right"],
+      "neighbors": {
+        "top-left": false,
+        "top-right": true,
+        "bottom-left": false,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": false,
+        "middle-right": true,
+        "bottom-left": false,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 2,
+      "position": "row_0_col_2",
+      "name": "bottom_left_innercorner",
+      "overlaps": ["bottom", "left"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": false,
+        "bottom-left": true,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": false,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 3,
+      "position": "row_0_col_3",
+      "name": "bottom_edge",
+      "overlaps": [ "bottom"],
+      "neighbors": {
+        "top-left": false,
+        "top-right": false,
+        "bottom-left": true,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": false,
+        "top-right": false,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 4,
+      "position": "row_1_col_0",
+      "name": "topleft_bottomright_corner",
+      "overlaps": ["top", "left",  "bottom", "right"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": false,
+        "bottom-left": false,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": false,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": false,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 5,
+      "position": "row_1_col_1",
+      "name": "bottom_right_innercorner",
+      "overlaps": ["right", "bottom"],
+      "neighbors": {
+        "top-left": false,
+        "top-right": true,
+        "bottom-left": true,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 6,
+      "position": "row_1_col_2",
+      "name": "filled_center",
+      "overlaps": ["top", "right", "bottom", "left"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": true,
+        "bottom-left": true,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 7,
+      "position": "row_1_col_3",
+      "name": "top_left_innercorner",
+      "overlaps": ["top", "left"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": true,
+        "bottom-left": true,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": false
+      }
+    },
+    {
+      "index": 8,
+      "position": "row_2_col_0",
+      "name": "top_right_corner",
+      "overlaps": ["top",  "right"],
+      "neighbors": {
+        "top-left": false,
+        "top-right": true,
+        "bottom-left": false,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": false,
+        "middle-right": true,
+        "bottom-left": false,
+        "bottom-center": false,
+        "bottom-right": false
+      }
+    },
+    {
+      "index": 9,
+      "position": "row_2_col_1",
+      "name": "top_edge",
+      "overlaps": ["top"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": true,
+        "bottom-left": false,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": false,
+        "bottom-center": false,
+        "bottom-right": false
+      }
+    },
+       {
+      "index": 10,
+      "position": "row_2_col_2",
+      "name": "top-right_innercorner",
+      "overlaps": ["top", "right" ],
+      "neighbors": {
+        "top-left": true,
+        "top-right": true,
+        "bottom-left": false,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": false,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+
+    
+    {
+      "index": 11,
+      "position": "row_2_col_3",
+      "name": "vertical_left",
+      "overlaps": ["left"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": false,
+        "bottom-left": true,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": false,
+        "middle-left": true,
+        "middle-right": false,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": false
+      }
+    },
+    {
+      "index": 12,
+      "position": "row_3_col_0",
+      "name": "empy_center",
+      "overlaps": [],
+      "neighbors": {
+        "top-left": false,
+        "top-right": false,
+        "bottom-left": false,
+        "bottom-right": false
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": false,
+        "top-right": false,
+        "middle-left": false,
+        "middle-right": false,
+        "bottom-left": false,
+        "bottom-center": false,
+        "bottom-right": false
+      }
+    },
+    {
+      "index": 13,
+      "position": "row_3_col_1",
+      "name": "bottom_right_corner",
+      "overlaps": ["bottom", "right"],
+      "neighbors": {
+        "top-left": false,
+        "top-right": false,
+        "bottom-left": false,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": false,
+        "top-right": false,
+        "middle-left": false,
+        "middle-right": true,
+        "bottom-left": false,
+        "bottom-center": true,
+        "bottom-right": true
+      }
+    },
+    {
+      "index": 14,
+      "position": "row_3_col_2",
+      "name": "topright_bottomleft_corner",
+      "overlaps": ["top", "right", "bottom", "left"],
+      "neighbors": {
+        "top-left": false,
+        "top-right": true,
+        "bottom-left": false,
+        "bottom-right": true
+      },
+       "maps": {
+        "top-left": false,
+        "top-center": true,
+        "top-right": true,
+        "middle-left": true,
+        "middle-right": true,
+        "bottom-left": true,
+        "bottom-center": true,
+        "bottom-right": false
+      }
+    },
+
+    {
+      "index": 15,
+      "position": "row_3_col_3",
+      "name": "top_left_corner",
+      "overlaps": ["left", "top"],
+      "neighbors": {
+        "top-left": true,
+        "top-right": false,
+        "bottom-left": false,
+        "bottom-right": false
+      },
+      "maps": {
+        "top-left": true,
+        "top-center": true,
+        "top-right": false,
+        "middle-left": true,
+        "middle-right": false,
+        "bottom-left": false,
+        "bottom-center": false,
+        "bottom-right": false
+      }
+    }
+  ],
+  
+  "rules": {
+    "description": "Rules for selecting the correct tile based on neighboring cells",
+    "selection_logic": "Check which neighboring cells contain content (true) or are empty (false), then match the pattern to the corresponding tile",
+    "neighbor_check_order": ["top", "right", "bottom", "left"],
+    "implementation_note": "For each cell, check the 4 cardinal neighbors. Create a bitmask or boolean pattern and match it to the tile with the same neighbor configuration."
+  }
+}

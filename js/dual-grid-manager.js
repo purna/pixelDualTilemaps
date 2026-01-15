@@ -29,49 +29,35 @@ class DualGridManager {
         console.log('Dual Grid Manager initialized');
     }
 
-   // MODIFIED: Save current canvas state before switching tiles
-   saveCurrentTileState() {
-       if (this.selectedTile === null) return;
-       
-       const tileIndex = parseInt(this.selectedTile.dataset.index);
-       
-       // Ensure State.layers is initialized
-       this.ensureStateLayersInitialized();
-       
-       // Save canvas contents using the tile state manager
-       this.tileStateManager.saveTileCanvasState(tileIndex, this.getCanvasElements());
-       
-       // Save DEEP COPY of layer data from State (not references)
-       if (typeof State !== 'undefined' && State.layers) {
-           const layerData = State.layers.map(layer => {
-               // Create a new canvas and copy the pixel data
-               const canvasDataURL = layer.canvas ? layer.canvas.toDataURL() : null;
-               
-               return {
-                   id: layer.id,
-                   name: layer.name,
-                   visible: layer.visible,
-                   opacity: layer.opacity,
-                   canvasData: canvasDataURL
-               };
-           });
-           
-           this.tileStateManager.saveTileLayerData(tileIndex, layerData);
-       }
-       
-       // Save tool state for this tile
-       if (typeof State !== 'undefined') {
-           const toolState = {
-               currentTool: State.currentTool || 'pencil',
-               currentColor: State.currentColor || '#282828',
-               brushSize: State.brushSize || 0,
-               opacity: State.opacity || 1.0
-           };
-           this.tileStateManager.saveTileToolState(tileIndex, toolState);
-       }
-       
-       console.log(`Saved canvas state for tile ${tileIndex} with ${State.layers ? State.layers.length : 0} layers`);
-   }
+    // MODIFIED: Save current canvas state before switching tiles
+    saveCurrentTileState() {
+        if (this.selectedTile === null) return;
+        
+        const tileIndex = parseInt(this.selectedTile.dataset.index);
+        
+        // Save canvas contents using the tile state manager
+        this.tileStateManager.saveTileCanvasState(tileIndex, this.getCanvasElements());
+        
+        // Save DEEP COPY of layer data from State (not references)
+        if (typeof State !== 'undefined' && State.layers) {
+            const layerData = State.layers.map(layer => {
+                // Create a new canvas and copy the pixel data
+                const canvasDataURL = layer.canvas ? layer.canvas.toDataURL() : null;
+                
+                return {
+                    id: layer.id,
+                    name: layer.name,
+                    visible: layer.visible,
+                    opacity: layer.opacity,
+                    canvasData: canvasDataURL
+                };
+            });
+            
+            this.tileStateManager.saveTileLayerData(tileIndex, layerData);
+        }
+        
+        console.log(`Saved canvas state for tile ${tileIndex} with ${State.layers.length} layers`);
+    }
 
     // NEW: Restore canvas state for a tile
     async restoreTileState(tileIndex) {

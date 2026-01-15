@@ -75,6 +75,7 @@ const App = {
 
         // Initialize UI and Input handlers
         UIManager.init();
+        RightPanelManager.init();
         InputHandler.init();
 
         // Initialize tutorial system
@@ -239,5 +240,5 @@ if (document.readyState === 'loading') {
 
 // Export for potential module usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { App, State, DOM, TilemapCore, PaletteManager, LayerManager, ToolManager, FileManager, InputHandler, UIManager };
+    module.exports = { App, State, DOM, TilemapCore, PaletteManager, LayerManager, ToolManager, FileManager, InputHandler, UIManager, RightPanelManager };
 }

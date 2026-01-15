@@ -94,11 +94,12 @@ handleDrawing(e) {
     let x = clientX - rect.left;
     let y = clientY - rect.top;
     
-    // Account for zoom when calculating coordinates
-    // When the grid is scaled, mouse coordinates need to be adjusted
-    const scale = State.zoom;
-    x = x / scale;
-    y = y / scale;
+    // Calculate the actual scale ratio between rendered and logical canvas sizes
+    const scaleX = Config.CANVAS_SIZE / rect.width;
+    const scaleY = Config.CANVAS_SIZE / rect.height;
+
+    x = x * scaleX;
+    y = y * scaleY;
     
     // Calculate the logical tile coordinate (0 to 31) within the clicked canvas
     const tileX = Math.floor(x / Config.PIXEL_SIZE);
@@ -159,10 +160,12 @@ handleEyedropper(e, targetCanvas) {
         let x = clientX - rect.left;
         let y = clientY - rect.top;
         
-        // Account for zoom when calculating coordinates
-        const scale = State.zoom;
-        x = x / scale;
-        y = y / scale;
+        // Calculate the actual scale ratio between rendered and logical canvas sizes
+        const scaleX = Config.CANVAS_SIZE / rect.width;
+        const scaleY = Config.CANVAS_SIZE / rect.height;
+
+        x = x * scaleX;
+        y = y * scaleY;
         
         // Calculate the logical tile coordinate (0 to 31) within the clicked canvas
         const tileX = Math.floor(x / Config.PIXEL_SIZE);

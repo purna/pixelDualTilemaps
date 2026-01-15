@@ -17,9 +17,9 @@ const FileManager = {
             State.redo();
             this.updateHistoryButtons();
         });
-        DOM.elements.saveBtn.addEventListener('click', () => this.saveProject());
+        DOM.elements.saveBtn.addEventListener('click', () => this.exportTilemapData());
         DOM.elements.loadBtn.addEventListener('click', () => this.loadProject());
-        DOM.elements.exportBtn.addEventListener('click', () => this.exportProject());
+        DOM.elements.exportBtn.addEventListener('click', () => this.exportSpriteSheet());
         
         // Hidden file input
         DOM.elements.fileInput.addEventListener('change', (e) => {
@@ -160,31 +160,121 @@ const FileManager = {
         }
     },
     
-    // Export as sprite sheet
+    // Export tilemap data as JSON
+    exportTilemapData() {
+        try {
+            // Create a combined JSON structure for all 16 tilemaps
+            const exportData = {
+                version: '1.0',
+                timestamp: new Date().toISOString(),
+                tilemapCount: 16,
+                tilemaps: []
+            };
+            
+            // Get all canvases from the tilemap grid
+            const canvases = [];
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const canvasId = `preview-${row}-${col}`;
+                    const canvas = document.getElementById(canvasId);
+                    if (canvas) {
+                        canvases.push({
+                            id: canvasId,
+                            canvas: canvas,
+                            row: row,
+                            col: col
+                        });
+                    }
+                }
+            }
+            
+            // Add each tilemap to the export data
+            canvases.forEach((canvasInfo, index) => {
+                const tileData = {
+                    tileId: index,
+                    position: { row: canvasInfo.row, col: canvasInfo.col },
+                    canvasId: canvasInfo.id,
+                    imageData: canvasInfo.canvas.toDataURL('image/png'),
+                    layers: []
+                };
+                
+                // Add layer information for this tilemap
+                State.layers.forEach((layer) => {
+                    tileData.layers.push({
+                        layerId: layer.id,
+                        name: layer.name,
+                        visible: layer.visible,
+                        opacity: layer.opacity,
+                        imageData: layer.canvas.toDataURL('image/png')
+                    });
+                });
+                
+                exportData.tilemaps.push(tileData);
+            });
+            
+            // Convert to JSON string
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // Create filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `tilemap-data-combined-${timestamp}.json`;
+            
+            // Download the JSON file
+            this.downloadFile(jsonString, filename, 'application/json');
+            
+            if (typeof Notifications !== 'undefined') {
+                const notifications = new Notifications();
+                notifications.success('All 16 tilemaps exported as combined JSON');
+            }
+            
+        } catch (error) {
+            console.error('Tilemap data export error:', error);
+            if (typeof Notifications !== 'undefined') {
+                const notifications = new Notifications();
+                notifications.error('Error exporting tilemap data');
+            }
+        }
+    },
+    
+    // Export as sprite sheet with all 16 tilemaps in 4x4 grid
     exportSpriteSheet() {
         try {
-            // Create a sprite sheet with multiple tiles
-            const spriteSize = Config.TILE_DIM;
-            const numTiles = 9; // 3x3 grid
+            // Create a sprite sheet with all 16 tilemaps in 4x4 grid
+            const tileSize = Config.TILE_DIM;
+            const gridSize = 4;
             
-            // Create new canvas for sprite sheet
+            // Create new canvas for sprite sheet (4x4 grid of tiles)
             const spriteCanvas = document.createElement('canvas');
-            spriteCanvas.width = spriteSize * 3;
-            spriteCanvas.height = spriteSize * 3;
+            spriteCanvas.width = tileSize * gridSize;
+            spriteCanvas.height = tileSize * gridSize;
             const spriteCtx = spriteCanvas.getContext('2d');
             
-            // Draw current tile in center of sprite sheet
-            spriteCtx.drawImage(DOM.editorCanvas, spriteSize, spriteSize);
+            // Draw all 16 tilemaps into the sprite sheet
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const canvasId = `preview-${row}-${col}`;
+                    const sourceCanvas = document.getElementById(canvasId);
+                    
+                    if (sourceCanvas) {
+                        // Calculate position in sprite sheet
+                        const x = col * tileSize;
+                        const y = row * tileSize;
+                        
+                        // Draw the tilemap onto the sprite sheet
+                        spriteCtx.drawImage(sourceCanvas, x, y, tileSize, tileSize);
+                    }
+                }
+            }
             
             // Export sprite sheet
             const dataURL = spriteCanvas.toDataURL('image/png');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            const filename = `tilemap-spritesheet-${timestamp}.png`;
+            const filename = `tilemap-spritesheet-4x4-${timestamp}.png`;
             
             this.downloadDataURL(dataURL, filename);
             if (typeof Notifications !== 'undefined') {
                 const notifications = new Notifications();
-                notifications.success('Sprite sheet exported');
+                notifications.success('4x4 sprite sheet with all 16 tilemaps exported');
             }
             
         } catch (error) {

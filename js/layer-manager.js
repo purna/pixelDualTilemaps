@@ -9,39 +9,41 @@ const LayerManager = {
     },
     
     setupEventListeners() {
-        // Add layer button
-        DOM.elements.addLayerBtn.addEventListener('click', () => {
-            this.addLayer();
-        });
+        // Check if elements exist before adding event listeners
+        if (DOM.elements.addLayerBtn) {
+            DOM.elements.addLayerBtn.addEventListener('click', () => {
+                this.addLayer();
+            });
+        }
         
-        // Layers panel toggle
-        DOM.elements.layersBtn.addEventListener('click', () => {
-            State.setShowLayers(!State.showLayers);
-        });
+        if (DOM.elements.layersBtn) {
+            DOM.elements.layersBtn.addEventListener('click', () => {
+                State.setShowLayers(!State.showLayers);
+            });
+        }
         
-        // Layer list click handling
-        DOM.elements.layersList.addEventListener('click', (e) => {
-            this.handleLayerListClick(e);
-        });
-        
-        // Layer list context menu (right-click)
-        DOM.elements.layersList.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            this.handleLayerContextMenu(e);
-        });
-        
-        // Drag and drop for layer reordering
-        DOM.elements.layersList.addEventListener('dragstart', (e) => {
-            this.handleDragStart(e);
-        });
-        
-        DOM.elements.layersList.addEventListener('dragover', (e) => {
-            this.handleDragOver(e);
-        });
-        
-        DOM.elements.layersList.addEventListener('drop', (e) => {
-            this.handleDrop(e);
-        });
+        if (DOM.elements.layersList) {
+            DOM.elements.layersList.addEventListener('click', (e) => {
+                this.handleLayerListClick(e);
+            });
+            
+            DOM.elements.layersList.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.handleLayerContextMenu(e);
+            });
+            
+            DOM.elements.layersList.addEventListener('dragstart', (e) => {
+                this.handleDragStart(e);
+            });
+            
+            DOM.elements.layersList.addEventListener('dragover', (e) => {
+                this.handleDragOver(e);
+            });
+            
+            DOM.elements.layersList.addEventListener('drop', (e) => {
+                this.handleDrop(e);
+            });
+        }
     },
     
     createDefaultLayer() {

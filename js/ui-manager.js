@@ -8,6 +8,7 @@ const UIManager = {
         this.setupContextSwitching();
         this.setupBrushControlsDrag();
         this.setupSettingsTabs();
+        this.setupSectionToggles();
 
         // Load saved panel state
         this.loadPanelState();
@@ -158,6 +159,9 @@ const UIManager = {
                 }
             });
         }
+
+        // 5. Setup section toggle buttons
+        this.setupSectionToggles();
     },
 
     setupBrushControlsDrag() {
@@ -267,6 +271,29 @@ const UIManager = {
             window.removeEventListener('mouseup', onPointerUp);
             window.removeEventListener('touchend', onPointerUp);
         };
+    },
+
+    setupSectionToggles() {
+        // Add event listeners to all section toggle buttons
+        const toggleButtons = document.querySelectorAll('.section-toggle');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                const targetElement = document.getElementById(targetId);
+                const sectionBody = button.closest('.panel-section')?.querySelector('.section-body');
+                
+                if (targetElement && sectionBody) {
+                    const isHidden = sectionBody.classList.contains('hidden');
+                    if (isHidden) {
+                        sectionBody.classList.remove('hidden');
+                        button.innerHTML = '<i class="fas fa-minus"></i>';
+                    } else {
+                        sectionBody.classList.add('hidden');
+                        button.innerHTML = '<i class="fas fa-plus"></i>';
+                    }
+                }
+            });
+        });
     },
 
 

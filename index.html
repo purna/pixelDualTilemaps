@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/tutorials.css">
     <link rel="stylesheet" href="css/dual-grid.css">
+    <link rel="stylesheet" href="css/right-panel.css">
 
 </head>
 
@@ -116,20 +117,20 @@
 
 
             <button class="tool-btn" id="layersBtn" title="Layers (L)"
-                data-tooltip="**Layer Management**\n--Organize your artwork--\n\nâ€¢ Add new layers\nâ€¢ Delete layers\nâ€¢ Toggle visibility\nâ€¢ Reorder layers\n\nCreate complex artwork with multiple layers">
+                data-tooltip="**Layer Management**\n--Organize your artwork--\n\n• Add new layers\n• Delete layers\n• Toggle visibility\n• Reorder layers\n\nCreate complex artwork with multiple layers">
                 <i class="fas fa-layer-group"></i>
                 <span>Layers</span>
             </button>
             <div class="separator"></div>
             <button class="tool-btn" id="settingsBtn" title="Settings"
-                data-tooltip="**Settings**\n--Configure preferences--\n\nâ€¢ Grid visibility\nâ€¢ Background color\nâ€¢ Canvas size\nâ€¢ Auto-save options\n\nToggle tooltips on/off here">
+                data-tooltip="**Settings**\n--Configure preferences--\n\n• Grid visibility\n• Background color\n• Canvas size\n• Auto-save options\n\nToggle tooltips on/off here">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </button>
             <div class="separator"></div>
 
             <button class="tool-btn" id="tilemapBtn" title="Tilemap"
-                data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\nâ€¢ View 3x3 tile grid\nâ€¢ Select active tiles\nâ€¢ Edit seamless patterns\n\nCreate repeating tile patterns">
+                data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\n• View 3x3 tile grid\n• Select active tiles\n• Edit seamless patterns\n\nCreate repeating tile patterns">
                 <i class="fas fa-th"></i>
                 <span>Tilemap</span>
             </button>
@@ -210,41 +211,76 @@
 
             <!-- Color Palette Section -->
             <div id="panel-palette" class="panel-section">
-                <div class="section-title">
-                    <span>Color Palette</span>
-                    <div style="display:flex; gap:5px;">
-                        <button id="importPaletteUrlBtn" title="Import from Coolors URL"
-                            style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
-                            <i class="fas fa-link"></i>
-                        </button>
-                        <button id="saveColorBtn" title="Save Color"
-                            style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
-                            <i class="fas fa-plus"></i>
+                <div class="section-header">
+                    <div class="label-group">
+                        <span>Color Palette</span>
+                    </div>
+                    <div class="layer-controls">
+                        <button class="section-toggle" data-target="palette-container"
+                            title="Toggle Palette Section">
+                            <i class="fas fa-minus"></i>
                         </button>
                     </div>
                 </div>
-                <div class="color-controls">
-                    <input type="color" id="colorPicker" value="#282828"
-                        style="width:30px; height:30px; padding:0; border:none; background:none;">
-                    <input type="text" id="colorHex" value="#282828"
-                        style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); width:70px; padding:4px; font-family:monospace;">
-                </div>
-                <div id="palette-container" class="palette-grid">
-                    <!-- Palette swatches will be added here -->
+                <div class="section-body">
+                    <div class="color-controls">
+                        <input type="color" id="colorPicker" value="#282828"
+                            style="width:30px; height:30px; padding:0; border:none; background:none;">
+                        <input type="text" id="colorHex" value="#282828"
+                            style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); width:70px; padding:4px; font-family:monospace;">
+                        <div style="display:flex; gap:5px;">
+                            <button id="importPaletteUrlBtn" title="Import from Coolors URL"
+                                style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            <button id="saveColorBtn" title="Save Color"
+                                style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="palette-container" class="palette-grid">
+                        <!-- Palette swatches will be added here -->
+                    </div>
                 </div>
             </div>
 
             <!-- Layers Section -->
             <div id="panel-layers" class="panel-section hidden">
-                <div class="section-title">
-                    <span>Layers</span>
-                    <button id="addLayerBtn"
-                        style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
-                        <i class="fas fa-plus-circle"></i>
-                    </button>
+                <div class="section-header">
+                    <div class="label-group">
+                        <span>Layers</span>
+                    </div>
+                    <div class="layer-controls">
+                        <button class="section-toggle" data-target="layers-container"
+                            title="Toggle Layers Section">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
-                <div id="layers-list" class="layers-list" style="max-height: 400px;">
-                    <!-- Layers will be added here -->
+                <div class="section-body">
+                  
+                    
+                     <div id="layers-container" class="folder-controls">
+                                    <button class="layer-control-btn" id="add-group-btn" title="Add Group">
+                                        <i class="fas fa-folder-plus"></i>
+                                    </button>
+                                    <button class="layer-control-btn" id="expand-all-btn" title="Expand All">
+                                        <i class="fas fa-expand-arrows-alt"></i>
+                                    </button>
+                                    <button class="layer-control-btn" id="collapse-all-btn" title="Collapse All">
+                                        <i class="fas fa-compress-arrows-alt"></i>
+                                    </button>
+                                    <button class="layer-control-btn" id="addLayerBtn" title="Add Layer">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </button>
+                    </div>
+                  
+
+
+                    <div id="layers-list" class="layers-list" style="max-height: 400px;">
+                        <!-- Layers will be added here -->
+                    </div>
                 </div>
             </div>
 
@@ -252,92 +288,125 @@
 
             <!-- Tool Options Section -->
             <div id="panel-tool-options" class="panel-section">
-                <div class="section-title"><span>Tools Options</span></div>
-                <div style="margin-bottom:10px; display: block;" id="panel-tool-control">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                        <label style="font-size:11px; color:var(--text-secondary);">
-                            <span id="brushSizeLabelPanel">Brush Size</span>
-                        </label>
-                        <span style="font-size:11px; color:var(--text-secondary);" id="brushSizeDisplay">1</span>
+                <div class="section-header">
+                    <div class="label-group">
+                        <span>Tools Options</span>
                     </div>
-                    <input type="range" id="brushSizeSlider" min="0" max="15" value="0" style="width:100%;">
-
+                    <div class="layer-controls">
+                        <button class="section-toggle" data-target="tools-container"
+                            title="Toggle Tools Section">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
-                <div style="margin-bottom:10px;" id="panel-opacity-control">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                        <label style="font-size:11px; color:var(--text-secondary);">
-                            <span>Opacity</span>
-                        </label>
-                        <span style="font-size:11px; color:var(--text-secondary);" id="opacityDisplay">100</span>
+                <div class="section-body">
+                    <div id="tools-container">
+                        <div style="margin-bottom:10px; display: block;" id="panel-tool-control">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label style="font-size:11px; color:var(--text-secondary);">
+                                    <span id="brushSizeLabelPanel">Brush Size</span>
+                                </label>
+                                <span style="font-size:11px; color:var(--text-secondary);" id="brushSizeDisplay">1</span>
+                            </div>
+                            <input type="range" id="brushSizeSlider" min="0" max="15" value="0" style="width:100%;">
+                        </div>
+                        <div style="margin-bottom:10px;" id="panel-opacity-control">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label style="font-size:11px; color:var(--text-secondary);">
+                                    <span>Opacity</span>
+                                </label>
+                                <span style="font-size:11px; color:var(--text-secondary);" id="opacityDisplay">100</span>
+                            </div>
+                            <input type="range" id="opacitySlider" min="0" max="100" value="100" style="width:100%;">
+                        </div>
                     </div>
-                    <input type="range" id="opacitySlider" min="0" max="100" value="100" style="width:100%;">
                 </div>
             </div>
 
             <div id="panel-tool-canvas" class="panel-section hidden">
-                <div class="section-title"><span>Canvas Options</span></div>
-                <div class="canvas-size-controls">
-                    <div class="size-input-group">
-                        <input type="number" id="widthInput" value="32" min="4" max="512" placeholder="Width"
-                            class="size-input">
-                        <span class="size-separator">Ã—</span>
-                        <input type="number" id="heightInput" value="32" min="4" max="512" placeholder="Height"
-                            class="size-input">
+                <div class="section-header">
+                    <div class="label-group">
+                        <span>Canvas Options</span>
                     </div>
-                    <button id="apply-canvas-resize" class="btn btn-apply-size" title="Apply Canvas Resize">
-                        <i class="fas fa-expand-arrows-alt"></i>
-                        <span>Apply</span>
-                    </button>
+                    <div class="layer-controls">
+                        <button class="section-toggle" data-target="canvas-container"
+                            title="Toggle Canvas Section">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="size-description">
-                    Set the canvas dimensions (4-512 pixels)
+                <div class="section-body">
+                    <div id="canvas-container">
+                        <div class="canvas-size-controls">
+                            <div class="size-input-group">
+                                <input type="number" id="widthInput" value="32" min="4" max="512" placeholder="Width"
+                                    class="size-input">
+                                <span class="size-separator">×</span>
+                                <input type="number" id="heightInput" value="32" min="4" max="512" placeholder="Height"
+                                    class="size-input">
+                            </div>
+                            <button id="apply-canvas-resize" class="btn btn-apply-size" title="Apply Canvas Resize">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                                <span>Apply</span>
+                            </button>
+                        </div>
+                        <div class="size-description">
+                            Set the canvas dimensions (4-512 pixels)
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Tilemap Panel Section -->
             <div id="panel-tilemap" class="panel-section hidden">
-                <div class="section-title">
-                    <span>Tilemap Manager</span>
-                    <button id="tilemapSettingsBtn" title="Tilemap Settings"
-                        style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-                <div class="tilemap-container">
-                    <div class="tilemap-grid" id="tilemapGrid">
-                        <!-- 3x3 grid of tilemap squares connected to actual canvases -->
-                        <div class="tilemap-square" data-row="0" data-col="0" data-canvas="preview-0-0">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="0" data-col="1" data-canvas="preview-0-1">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="0" data-col="2" data-canvas="preview-0-2">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="1" data-col="0" data-canvas="preview-1-0">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square center" data-row="1" data-col="1" data-canvas="editor-canvas">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="1" data-col="2" data-canvas="preview-1-2">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="2" data-col="0" data-canvas="preview-2-0">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="2" data-col="1" data-canvas="preview-2-1">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
-                        <div class="tilemap-square" data-row="2" data-col="2" data-canvas="preview-2-2">
-                            <canvas width="32" height="32"></canvas>
-                        </div>
+                <div class="section-header">
+                    <div class="label-group">
+                        <span>Tilemap Manager</span>
                     </div>
-                    <div class="tilemap-info">
-                        <p style="font-size:10px; color:var(--text-secondary); margin-top:8px; text-align:center;">
-                            Select a tile to make it active
-                        </p>
+                    <div class="layer-controls">
+                        <button class="section-toggle" data-target="tilemap-container"
+                            title="Toggle Tilemap Section">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div id="tilemap-container">
+                        <div class="tilemap-grid" id="tilemapGrid">
+                            <!-- 3x3 grid of tilemap squares connected to actual canvases -->
+                            <div class="tilemap-square" data-row="0" data-col="0" data-canvas="preview-0-0">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="0" data-col="1" data-canvas="preview-0-1">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="0" data-col="2" data-canvas="preview-0-2">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="1" data-col="0" data-canvas="preview-1-0">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square center" data-row="1" data-col="1" data-canvas="editor-canvas">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="1" data-col="2" data-canvas="preview-1-2">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="2" data-col="0" data-canvas="preview-2-0">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="2" data-col="1" data-canvas="preview-2-1">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                            <div class="tilemap-square" data-row="2" data-col="2" data-canvas="preview-2-2">
+                                <canvas width="32" height="32"></canvas>
+                            </div>
+                        </div>
+                        <div class="tilemap-info">
+                            <p style="font-size:10px; color:var(--text-secondary); margin-top:8px; text-align:center;">
+                                Select a tile to make it active
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -493,7 +562,7 @@
                                 <div class="size-input-group">
                                     <input type="number" id="modal-canvas-width" value="32" min="4" max="1024"
                                         placeholder="Width" class="size-input">
-                                    <span class="size-separator">Ã—</span>
+                                    <span class="size-separator">×</span>
                                     <input type="number" id="modal-canvas-height" value="32" min="4" max="1024"
                                         placeholder="Height" class="size-input">
                                 </div>
@@ -511,12 +580,12 @@
                         <div class="property-group">
                             <label class="property-label">Default Sizes</label>
                             <div class="default-size-presets">
-                                <button class="preset-btn" data-width="24" data-height="24">24Ã—24</button>
-                                <button class="preset-btn" data-width="36" data-height="36">36Ã—36</button>
-                                <button class="preset-btn" data-width="48" data-height="48">48Ã—48</button>
-                                <button class="preset-btn" data-width="128" data-height="128">128Ã—128</button>
-                                <button class="preset-btn" data-width="512" data-height="512">512Ã—512</button>
-                                <button class="preset-btn" data-width="1024" data-height="1024">1024Ã—1024</button>
+                                <button class="preset-btn" data-width="24" data-height="24">24×24</button>
+                                <button class="preset-btn" data-width="36" data-height="36">36×36</button>
+                                <button class="preset-btn" data-width="48" data-height="48">48×48</button>
+                                <button class="preset-btn" data-width="128" data-height="128">128×128</button>
+                                <button class="preset-btn" data-width="512" data-height="512">512×512</button>
+                                <button class="preset-btn" data-width="1024" data-height="1024">1024×1024</button>
                             </div>
                         </div>
                     </div>
@@ -540,17 +609,17 @@
                                     <select id="setting-export-resolution"
                                         style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;">
                                         <!-- Game Asset Sizes -->
-                                        <option value="24x24">24Ã—24 - Game Icon</option>
-                                        <option value="36x36">36Ã—36 - Game Icon</option>
-                                        <option value="48x48">48Ã—48 - Game Icon</option>
-                                        <option value="128x128">128Ã—128 - Game Sprite</option>
-                                        <option value="512x512">512Ã—512 - Game Texture</option>
-                                        <option value="1024x1024">1024Ã—1024 - High-res Texture</option>
+                                        <option value="24x24">24×24 - Game Icon</option>
+                                        <option value="36x36">36×36 - Game Icon</option>
+                                        <option value="48x48">48×48 - Game Icon</option>
+                                        <option value="128x128">128×128 - Game Sprite</option>
+                                        <option value="512x512">512×512 - Game Texture</option>
+                                        <option value="1024x1024">1024×1024 - High-res Texture</option>
 
                                         <!-- Standard Resolutions -->
-                                        <option value="1920x1080">1920Ã—1080 - Full HD</option>
-                                        <option value="2560x1440">2560Ã—1440 - 2K</option>
-                                        <option value="3840x2160">3840Ã—2160 - 4K</option>
+                                        <option value="1920x1080">1920×1080 - Full HD</option>
+                                        <option value="2560x1440">2560×1440 - 2K</option>
+                                        <option value="3840x2160">3840×2160 - 4K</option>
                                         <option value="custom">Custom Size</option>
                                     </select>
                                 </label>
@@ -665,6 +734,9 @@
     <script src="js/zoom-manager.js"></script>
     <script src="js/tutorialConfig.js"></script>
     <script src="js/tutorialSystem.js"></script>
+
+    <!-- Right Panel Management -->
+    <script src="js/right-panel-manager.js"></script>
 
     <!-- Input handling -->
     <script src="js/input-handler.js"></script>

@@ -29,30 +29,49 @@ class DualGridManager {
         console.log('Dual Grid Manager initialized');
     }
 
-    // MODIFIED: Save current canvas state before switching tiles
-    saveCurrentTileState() {
-        if (this.selectedTile === null) return;
-        
-        const tileIndex = parseInt(this.selectedTile.dataset.index);
-        
-        // Save canvas contents using the tile state manager
-        this.tileStateManager.saveTileCanvasState(tileIndex, this.getCanvasElements());
-        
-        // Save the layer data from State
-        if (typeof State !== 'undefined' && State.layers) {
-            const layerData = State.layers.map(layer => ({
-                id: layer.id,
-                name: layer.name,
-                visible: layer.visible,
-                opacity: layer.opacity,
-                canvasData: layer.canvas ? layer.canvas.toDataURL() : null
-            }));
-            
-            this.tileStateManager.saveTileLayerData(tileIndex, layerData);
-        }
-        
-        console.log(`Saved canvas state for tile ${tileIndex}`);
-    }
+   // MODIFIED: Save current canvas state before switching tiles
+   saveCurrentTileState() {
+       if (this.selectedTile === null) return;
+       
+       const tileIndex = parseInt(this.selectedTile.dataset.index);
+       
+       // Ensure State.layers is initialized
+       this.ensureStateLayersInitialized();
+       
+       // Save canvas contents using the tile state manager
+       this.tileStateManager.saveTileCanvasState(tileIndex, this.getCanvasElements());
+       
+       // Save DEEP COPY of layer data from State (not references)
+       if (typeof State !== 'undefined' && State.layers) {
+           const layerData = State.layers.map(layer => {
+               // Create a new canvas and copy the pixel data
+               const canvasDataURL = layer.canvas ? layer.canvas.toDataURL() : null;
+               
+               return {
+                   id: layer.id,
+                   name: layer.name,
+                   visible: layer.visible,
+                   opacity: layer.opacity,
+                   canvasData: canvasDataURL
+               };
+           });
+           
+           this.tileStateManager.saveTileLayerData(tileIndex, layerData);
+       }
+       
+       // Save tool state for this tile
+       if (typeof State !== 'undefined') {
+           const toolState = {
+               currentTool: State.currentTool || 'pencil',
+               currentColor: State.currentColor || '#282828',
+               brushSize: State.brushSize || 0,
+               opacity: State.opacity || 1.0
+           };
+           this.tileStateManager.saveTileToolState(tileIndex, toolState);
+       }
+       
+       console.log(`Saved canvas state for tile ${tileIndex} with ${State.layers ? State.layers.length : 0} layers`);
+   }
 
     // NEW: Restore canvas state for a tile
     async restoreTileState(tileIndex) {
@@ -73,7 +92,23 @@ class DualGridManager {
         });
         
         // Clear the layer data in State
-        const layerData = this.tileStateManager.getTileLayerData(tileIndex);
+        let layerData = this.tileStateManager.getTileLayerData(tileIndex);
+        
+        // If no saved layer data exists, this is a fresh tile - create default layer
+        if (!layerData && typeof State !== 'undefined') {
+            layerData = [{
+                id: Date.now(),
+                name: 'Layer 1',
+                visible: true,
+                opacity: 1.0,
+                canvasData: null
+            }];
+            console.log(`Created default layer for fresh tile ${tileIndex}`);
+        }
+        
+        // Ensure State.layers is initialized
+        this.ensureStateLayersInitialized();
+        
         if (typeof State !== 'undefined' && layerData) {
             // Clear current layers
             State.layers = [];
@@ -172,6 +207,15 @@ class DualGridManager {
         }
         
         console.log(`Restored canvas state for tile ${tileIndex}`);
+    }
+    
+    /**
+     * Helper method to ensure State.layers is properly initialized
+     */
+    ensureStateLayersInitialized() {
+        if (typeof State !== 'undefined' && !State.layers) {
+            State.layers = [];
+        }
     }
 
     async selectTile(tileElement) {
@@ -752,7 +796,6 @@ addDualGridCSS() {
         let newTileIndex = -1;
         for (let i = 0; i < 16; i++) {
             const tileData = this.dualGridData.tiles[i];
-            const state = this.tileCanvasStates.get(i);
             
             // Check if this tile has no frame (is empty)
             if (!tileData.frame || !tileData.frame.canvasImage) {
@@ -804,18 +847,7 @@ addDualGridCSS() {
             this.dualGridData.tiles[newTileIndex] = newTileData;
         }
 
-        // Initialize canvas storage for the new tile
-        this.tileCanvasStates.set(newTileIndex, {
-            canvases: this.createEmptyCanvasSet(),
-            tilemapState: this.createEmptyTilemapState(),
-            layerData: null,
-            toolState: {
-                currentTool: 'pencil',
-                currentColor: '#282828',
-                brushSize: 0,
-                opacity: 1.0
-            }
-        });
+        // The tile state manager already initializes the tile state, no need to do it here
 
         // Create a new frame for this tile
         this.loadFrameForTile(newTileData);

@@ -1,5 +1,6 @@
 // tile-state-manager.js
 // Manages the state of individual tiles in the dual grid system
+// Each tile has independent layer data, similar to how frames work in animation
 
 class TileStateManager {
     constructor() {
@@ -50,7 +51,7 @@ class TileStateManager {
     }
 
     /**
-     * Save layer data for a tile
+     * Save layer data for a tile - CREATES DEEP COPY
      * @param {number} tileIndex - The index of the tile
      * @param {Array} layerData - The layer data to save
      */
@@ -58,17 +59,39 @@ class TileStateManager {
         const tileState = this.getTileState(tileIndex);
         if (!tileState) return;
 
-        tileState.layerData = layerData;
+        // CRITICAL: Create deep copy of layer data to prevent cross-contamination
+        // Each layer's canvas data is already a data URL (string), so we create new objects
+        tileState.layerData = layerData.map(layer => ({
+            id: layer.id,
+            name: layer.name,
+            visible: layer.visible,
+            opacity: layer.opacity,
+            canvasData: layer.canvasData  // Data URL string (already a deep copy)
+        }));
+        
+        console.log(`Saved ${layerData.length} layers for tile ${tileIndex}`);
     }
 
     /**
-     * Get layer data for a tile
+     * Get layer data for a tile - RETURNS DEEP COPY
      * @param {number} tileIndex - The index of the tile
      * @returns {Array|null} The layer data or null if not found
      */
     getTileLayerData(tileIndex) {
         const tileState = this.getTileState(tileIndex);
-        return tileState ? tileState.layerData : null;
+        
+        if (!tileState || !tileState.layerData) {
+            return null;
+        }
+        
+        // CRITICAL: Return a deep copy to prevent modifications affecting stored data
+        return tileState.layerData.map(layer => ({
+            id: layer.id,
+            name: layer.name,
+            visible: layer.visible,
+            opacity: layer.opacity,
+            canvasData: layer.canvasData
+        }));
     }
 
     /**
@@ -90,7 +113,7 @@ class TileStateManager {
      */
     getTileToolState(tileIndex) {
         const tileState = this.getTileState(tileIndex);
-        return tileState ? tileState.toolState : null;
+        return tileState ? { ...tileState.toolState } : null;
     }
 
     /**
@@ -112,7 +135,7 @@ class TileStateManager {
      */
     getTilemapState(tileIndex) {
         const tileState = this.getTileState(tileIndex);
-        return tileState ? tileState.tilemapState : null;
+        return tileState ? { ...tileState.tilemapState } : null;
     }
 }
 
@@ -121,7 +144,16 @@ class TileState {
         this.tileIndex = tileIndex;
         this.canvases = this.createEmptyCanvasSet();
         this.tilemapState = this.createEmptyTilemapState();
-        this.layerData = null;
+        
+        // Initialize with default layer structure (like frames do)
+        this.layerData = [{
+            id: Date.now(),
+            name: 'Layer 1',
+            visible: true,
+            opacity: 1.0,
+            canvasData: null  // Will be populated when saved
+        }];
+        
         this.toolState = {
             currentTool: 'pencil',
             currentColor: '#282828',

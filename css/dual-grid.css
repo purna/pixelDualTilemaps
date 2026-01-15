@@ -1,0 +1,127 @@
+.dual-grid-container {
+    margin: 15px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dual-grid-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--accent-tertiary);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    width: 100%;
+}
+
+.dual-grid {
+    display: grid;
+    gap: 2px;
+    background: var(--bg-medium);
+    padding: 4px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    width: fit-content;
+}
+
+.dual-grid-tile {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.dual-grid-tile:hover {
+    border-color: var(--accent-tertiary);
+    box-shadow: 0 0 4px rgba(0, 217, 255, 0.3);
+}
+
+.dual-grid-tile.selected {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 6px var(--border-glow);
+}
+
+.dual-grid-tile.has-frame {
+    border: 2px solid var(--accent-secondary);
+    box-shadow: 0 0 4px var(--border-glow);
+}
+
+.dual-grid-canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.dual-grid-tile-info {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 8px;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+.dual-grid-controls {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
+.tile-size-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+}
+
+.tile-size-input {
+    width: 60px;
+    padding: 4px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+}
+
+.tile-size-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.dual-grid-apply-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+.frame-canvases-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+}
+
+.frame-canvas {
+    position: absolute;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 2px solid var(--accent-secondary);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.frame-canvas.visible {
+    opacity: 1;
+}

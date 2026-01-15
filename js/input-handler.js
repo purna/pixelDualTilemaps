@@ -264,6 +264,16 @@ const InputHandler = {
             }
         }
         
+        // Color history shortcuts (keys 1-4)
+        if (key >= '1' && key <= '4') {
+            const colorIndex = parseInt(key) - 1;
+            if (State.recentColors && State.recentColors[colorIndex] && typeof PaletteManager !== 'undefined') {
+                PaletteManager.setCurrentColor(State.recentColors[colorIndex]);
+                e.preventDefault();
+                return;
+            }
+        }
+        
         // Escape key - cancel current operation
         if (key === 'escape') {
             e.preventDefault();
@@ -484,6 +494,16 @@ const InputHandler = {
         if (DOM.elements.exportBtn && typeof FileManager !== 'undefined') {
             DOM.elements.exportBtn.addEventListener('click', () => {
                 FileManager.exportProject();
+            });
+        }
+
+        if (DOM.elements.addNewBtn && typeof dualGridManager !== 'undefined') {
+            DOM.elements.addNewBtn.addEventListener('click', () => {
+                dualGridManager.addNewFrames();
+                if (typeof Notifications !== 'undefined') {
+                    const notifications = new Notifications();
+                    notifications.success('Created new tile instance');
+                }
             });
         }
 

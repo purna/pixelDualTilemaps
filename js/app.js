@@ -1,6 +1,7 @@
 // app.js
 // Main application initialization and coordination
 
+
 const App = {
     initialized: false,
     tutorialConfig: null,
@@ -62,6 +63,8 @@ const App = {
         FileManager.init();
         SettingsManager.init();
         ZoomManager.init();
+        FloatingPanelManager.init();
+        
 
         // Initialize dual grid manager
         if (typeof dualGridManager !== 'undefined') {

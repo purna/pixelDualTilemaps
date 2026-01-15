@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/tutorials.css">
+    <link rel="stylesheet" href="css/dual-grid.css">
 
 </head>
 
@@ -77,6 +78,10 @@
                 data-tooltip="**Export**\n--Export your tiles--\n\nExport your tile maps as image files">
                 <i class="fas fa-file-export"></i> Export
             </button>
+            <button id="addNewBtn" class="btn"
+                data-tooltip="**Add New**\n--Create new tile instance--\n\nCreate a new instance of the current tile application">
+                <i class="fas fa-plus-square"></i> Add New
+            </button>
         </div>
     </header>
 
@@ -111,20 +116,20 @@
 
 
             <button class="tool-btn" id="layersBtn" title="Layers (L)"
-                data-tooltip="**Layer Management**\n--Organize your artwork--\n\n• Add new layers\n• Delete layers\n• Toggle visibility\n• Reorder layers\n\nCreate complex artwork with multiple layers">
+                data-tooltip="**Layer Management**\n--Organize your artwork--\n\nâ€¢ Add new layers\nâ€¢ Delete layers\nâ€¢ Toggle visibility\nâ€¢ Reorder layers\n\nCreate complex artwork with multiple layers">
                 <i class="fas fa-layer-group"></i>
                 <span>Layers</span>
             </button>
             <div class="separator"></div>
             <button class="tool-btn" id="settingsBtn" title="Settings"
-                data-tooltip="**Settings**\n--Configure preferences--\n\n• Grid visibility\n• Background color\n• Canvas size\n• Auto-save options\n\nToggle tooltips on/off here">
+                data-tooltip="**Settings**\n--Configure preferences--\n\nâ€¢ Grid visibility\nâ€¢ Background color\nâ€¢ Canvas size\nâ€¢ Auto-save options\n\nToggle tooltips on/off here">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </button>
             <div class="separator"></div>
 
             <button class="tool-btn" id="tilemapBtn" title="Tilemap"
-                data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\n• View 3x3 tile grid\n• Select active tiles\n• Edit seamless patterns\n\nCreate repeating tile patterns">
+                data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\nâ€¢ View 3x3 tile grid\nâ€¢ Select active tiles\nâ€¢ Edit seamless patterns\n\nCreate repeating tile patterns">
                 <i class="fas fa-th"></i>
                 <span>Tilemap</span>
             </button>
@@ -182,7 +187,15 @@
 
             </div>
 
-
+            <!-- Floating Color History Overlay -->
+            <div class="floating-color-history">
+                <div class="color-history-swatches">
+                    <div class="color-swatch" data-color-index="0" title="Recent Color 1 (Press 1)"></div>
+                    <div class="color-swatch" data-color-index="1" title="Recent Color 2 (Press 2)"></div>
+                    <div class="color-swatch" data-color-index="2" title="Recent Color 3 (Press 3)"></div>
+                    <div class="color-swatch" data-color-index="3" title="Recent Color 4 (Press 4)"></div>
+                </div>
+            </div>
 
 
             <div id="info-box" class="info-box">
@@ -267,7 +280,7 @@
                     <div class="size-input-group">
                         <input type="number" id="widthInput" value="32" min="4" max="512" placeholder="Width"
                             class="size-input">
-                        <span class="size-separator">×</span>
+                        <span class="size-separator">Ã—</span>
                         <input type="number" id="heightInput" value="32" min="4" max="512" placeholder="Height"
                             class="size-input">
                     </div>
@@ -337,6 +350,8 @@
     <div id="panel-toggle" title="Toggle Panel">
         <i class="fas fa-chevron-right"></i>
     </div>
+
+
 
     <!-- UNIFIED SETTINGS MODAL -->
     <div class="modal-overlay" id="unified-settings-modal">
@@ -478,7 +493,7 @@
                                 <div class="size-input-group">
                                     <input type="number" id="modal-canvas-width" value="32" min="4" max="1024"
                                         placeholder="Width" class="size-input">
-                                    <span class="size-separator">×</span>
+                                    <span class="size-separator">Ã—</span>
                                     <input type="number" id="modal-canvas-height" value="32" min="4" max="1024"
                                         placeholder="Height" class="size-input">
                                 </div>
@@ -496,12 +511,12 @@
                         <div class="property-group">
                             <label class="property-label">Default Sizes</label>
                             <div class="default-size-presets">
-                                <button class="preset-btn" data-width="24" data-height="24">24×24</button>
-                                <button class="preset-btn" data-width="36" data-height="36">36×36</button>
-                                <button class="preset-btn" data-width="48" data-height="48">48×48</button>
-                                <button class="preset-btn" data-width="128" data-height="128">128×128</button>
-                                <button class="preset-btn" data-width="512" data-height="512">512×512</button>
-                                <button class="preset-btn" data-width="1024" data-height="1024">1024×1024</button>
+                                <button class="preset-btn" data-width="24" data-height="24">24Ã—24</button>
+                                <button class="preset-btn" data-width="36" data-height="36">36Ã—36</button>
+                                <button class="preset-btn" data-width="48" data-height="48">48Ã—48</button>
+                                <button class="preset-btn" data-width="128" data-height="128">128Ã—128</button>
+                                <button class="preset-btn" data-width="512" data-height="512">512Ã—512</button>
+                                <button class="preset-btn" data-width="1024" data-height="1024">1024Ã—1024</button>
                             </div>
                         </div>
                     </div>
@@ -525,17 +540,17 @@
                                     <select id="setting-export-resolution"
                                         style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;">
                                         <!-- Game Asset Sizes -->
-                                        <option value="24x24">24×24 - Game Icon</option>
-                                        <option value="36x36">36×36 - Game Icon</option>
-                                        <option value="48x48">48×48 - Game Icon</option>
-                                        <option value="128x128">128×128 - Game Sprite</option>
-                                        <option value="512x512">512×512 - Game Texture</option>
-                                        <option value="1024x1024">1024×1024 - High-res Texture</option>
+                                        <option value="24x24">24Ã—24 - Game Icon</option>
+                                        <option value="36x36">36Ã—36 - Game Icon</option>
+                                        <option value="48x48">48Ã—48 - Game Icon</option>
+                                        <option value="128x128">128Ã—128 - Game Sprite</option>
+                                        <option value="512x512">512Ã—512 - Game Texture</option>
+                                        <option value="1024x1024">1024Ã—1024 - High-res Texture</option>
 
                                         <!-- Standard Resolutions -->
-                                        <option value="1920x1080">1920×1080 - Full HD</option>
-                                        <option value="2560x1440">2560×1440 - 2K</option>
-                                        <option value="3840x2160">3840×2160 - 4K</option>
+                                        <option value="1920x1080">1920Ã—1080 - Full HD</option>
+                                        <option value="2560x1440">2560Ã—1440 - 2K</option>
+                                        <option value="3840x2160">3840Ã—2160 - 4K</option>
                                         <option value="custom">Custom Size</option>
                                     </select>
                                 </label>
@@ -638,12 +653,13 @@
 
     <!-- Specialized modules -->
     <script src="js/tilemap-core.js"></script>
-    <script src="js/frame-manager.js"></script>
+    <script src="js/floating-panel-manager.js"></script>
     <script src="js/palette-manager.js"></script>
     <script src="js/layer-manager.js"></script>
     <script src="js/tool-manager.js"></script>
     <script src="js/file-manager.js"></script>
     <script src="js/tilemap-manager.js"></script>
+    <script src="js/tile-state-manager.js"></script>
     <script src="js/dual-grid-manager.js"></script>
     <script src="js/settings-manager.js"></script>
     <script src="js/zoom-manager.js"></script>

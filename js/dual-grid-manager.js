@@ -1,18 +1,18 @@
-// dual-grid-manager.js - FIXED VERSION
+//  - FIXED VERSION
 // Now each of the 16 tiles stores its own canvas state
 
 class DualGridManager {
     constructor() {
         this.tiles = [];
         this.selectedTile = null;
-        this.tileSize = 32;
+        this.tileSize = Config.TILE_DIM;
         this.gridSize = 4;
         this.dualGridData = null;
         this.frameCanvases = [];
         this.frameCanvasesContainer = null;
         
-        // NEW: Store separate canvas data for each of the 16 tiles
-        this.tileCanvasStates = new Map(); // Maps tile index to canvas states
+        // Tile state manager for handling canvas state of each tile
+        this.tileStateManager = new TileStateManager();
         
         this.init();
     }
@@ -23,65 +23,10 @@ class DualGridManager {
         this.setupDualGridUI();
         this.setupEventListeners();
         
-        // Initialize canvas storage for all 16 tiles
-        this.initializeTileCanvasStorage();
+        // Initialize tile state storage for all 16 tiles
+        this.tileStateManager.initializeTileStorage();
         
         console.log('Dual Grid Manager initialized');
-    }
-
-    // NEW: Initialize storage for all 16 tiles
-    initializeTileCanvasStorage() {
-        for (let i = 0; i < 16; i++) {
-            // Create storage object for this tile
-            this.tileCanvasStates.set(i, {
-                // Store the state of each of the 9 canvases
-                canvases: this.createEmptyCanvasSet(),
-                tilemapState: this.createEmptyTilemapState(),
-                // Store the layer data from State
-                layerData: null,
-                // Store current tool and color for this tile
-                toolState: {
-                    currentTool: 'pencil',
-                    currentColor: '#282828',
-                    brushSize: 0,
-                    opacity: 1.0
-                }
-            });
-        }
-        console.log('Initialized canvas storage for 16 tiles');
-    }
-
-    // NEW: Create a set of empty canvases for storage
-    createEmptyCanvasSet() {
-        const positions = [
-            'preview-0-0', 'preview-0-1', 'preview-0-2',
-            'preview-1-0', 'editor-canvas', 'preview-1-2',
-            'preview-2-0', 'preview-2-1', 'preview-2-2'
-        ];
-        
-        const canvasSet = {};
-        positions.forEach(canvasId => {
-            const canvas = document.createElement('canvas');
-            canvas.width = Config.CANVAS_SIZE || 512;
-            canvas.height = Config.CANVAS_SIZE || 512;
-            canvasSet[canvasId] = canvas;
-        });
-        
-        return canvasSet;
-    }
-
-    // NEW: Create empty tilemap state
-    createEmptyTilemapState() {
-        return {
-            'top-left': false,
-            'top-center': false,
-            'top-right': false,
-            'middle-left': false,
-            'middle-right': false,
-            'bottom-left': false,
-            'bottom-center': false,
-            'bottom-right': false
-        };
     }
 
     // MODIFIED: Save current canvas state before switching tiles
@@ -89,56 +34,55 @@ class DualGridManager {
         if (this.selectedTile === null) return;
         
         const tileIndex = parseInt(this.selectedTile.dataset.index);
-        const state = this.tileCanvasStates.get(tileIndex);
         
-        if (!state) return;
-        
-        // Save ALL canvas contents including the editor canvas
-        const positions = [
-            'preview-0-0', 'preview-0-1', 'preview-0-2',
-            'preview-1-0', 'editor-canvas', 'preview-1-2',
-            'preview-2-0', 'preview-2-1', 'preview-2-2'
-        ];
-        
-        positions.forEach(canvasId => {
-            const sourceCanvas = document.getElementById(canvasId);
-            if (sourceCanvas && state.canvases[canvasId]) {
-                const ctx = state.canvases[canvasId].getContext('2d');
-                ctx.clearRect(0, 0, state.canvases[canvasId].width, state.canvases[canvasId].height);
-                ctx.drawImage(sourceCanvas, 0, 0);
-            }
-        });
+        // Save canvas contents using the tile state manager
+        this.tileStateManager.saveTileCanvasState(tileIndex, this.getCanvasElements());
         
         // Save the layer data from State
         if (typeof State !== 'undefined' && State.layers) {
-            state.layerData = State.layers.map(layer => ({
+            const layerData = State.layers.map(layer => ({
                 id: layer.id,
                 name: layer.name,
                 visible: layer.visible,
                 opacity: layer.opacity,
                 canvasData: layer.canvas ? layer.canvas.toDataURL() : null
             }));
+            
+            this.tileStateManager.saveTileLayerData(tileIndex, layerData);
         }
         
-        console.log(`Saved canvas state for tile ${tileIndex} (including editor canvas and ${state.layerData?.length || 0} layers)`);
+        console.log(`Saved canvas state for tile ${tileIndex}`);
     }
 
     // NEW: Restore canvas state for a tile
-    restoreTileState(tileIndex) {
-        const state = this.tileCanvasStates.get(tileIndex);
+    async restoreTileState(tileIndex) {
+        const tileState = this.tileStateManager.getTileState(tileIndex);
         
-        if (!state) {
+        if (!tileState) {
             console.warn(`No state found for tile ${tileIndex}`);
             return;
         }
         
-        // First, restore the layer data to State
-        if (typeof State !== 'undefined' && state.layerData) {
+        // First, clear all canvases immediately to prevent showing old content
+        const canvasElements = this.getCanvasElements();
+        Object.values(canvasElements).forEach(canvas => {
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        });
+        
+        // Clear the layer data in State
+        const layerData = this.tileStateManager.getTileLayerData(tileIndex);
+        if (typeof State !== 'undefined' && layerData) {
             // Clear current layers
             State.layers = [];
             
+            // Create an array of promises for image loading
+            const imageLoadPromises = [];
+            
             // Restore layers from saved data
-            state.layerData.forEach(layerData => {
+            layerData.forEach(layerData => {
                 const canvas = document.createElement('canvas');
                 canvas.width = Config.CANVAS_SIZE || 512;
                 canvas.height = Config.CANVAS_SIZE || 512;
@@ -151,28 +95,38 @@ class DualGridManager {
                     canvas: canvas
                 };
                 
+                // Clear canvas first
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
                 // Restore canvas data
                 if (layerData.canvasData) {
-                    const img = new Image();
-                    img.onload = () => {
-                        const ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0);
-                        
-                        // Update the display after image loads
-                        if (typeof TilemapCore !== 'undefined' && TilemapCore.updatePreviews) {
-                            TilemapCore.updatePreviews();
-                        }
-                    };
-                    img.src = layerData.canvasData;
-                } else {
-                    // Clear canvas if no data
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const imagePromise = new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0);
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            console.error('Failed to load layer image');
+                            resolve(); // Resolve anyway to not block
+                        };
+                        img.src = layerData.canvasData;
+                    });
+                    imageLoadPromises.push(imagePromise);
                 }
                 
                 State.layers.push(layer);
             });
+            
+            // Wait for all images to load
+            await Promise.all(imageLoadPromises);
+            
+            // Now update the display after all images are loaded
+            if (typeof TilemapCore !== 'undefined' && TilemapCore.updatePreviews) {
+                TilemapCore.updatePreviews();
+            }
             
             // Ensure active layer index is valid
             if (State.activeLayerIndex >= State.layers.length) {
@@ -180,17 +134,18 @@ class DualGridManager {
             }
             
             // Update layer UI
-            if (typeof LayerManager !== 'undefined' && LayerManager.renderList) {
-                LayerManager.renderList();
+            if (typeof LayerManager !== 'undefined' && LayerManager.renderLayers) {
+                LayerManager.renderLayers();
             }
         }
         
         // Restore tool state for this tile
-        if (typeof State !== 'undefined' && state.toolState) {
-            State.currentTool = state.toolState.currentTool;
-            State.currentColor = state.toolState.currentColor;
-            State.brushSize = state.toolState.brushSize;
-            State.opacity = state.toolState.opacity;
+        const toolState = this.tileStateManager.getTileToolState(tileIndex);
+        if (typeof State !== 'undefined' && toolState) {
+            State.currentTool = toolState.currentTool;
+            State.currentColor = toolState.currentColor;
+            State.brushSize = toolState.brushSize;
+            State.opacity = toolState.opacity;
             
             // Update UI to reflect the restored tool state
             if (typeof ToolManager !== 'undefined') {
@@ -202,52 +157,24 @@ class DualGridManager {
             }
         }
         
-        // Clear ALL canvases
-        const allPositions = [
-            'preview-0-0', 'preview-0-1', 'preview-0-2',
-            'preview-1-0', 'editor-canvas', 'preview-1-2',
-            'preview-2-0', 'preview-2-1', 'preview-2-2'
-        ];
-        
-        allPositions.forEach(canvasId => {
-            const canvas = document.getElementById(canvasId);
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        });
-        
-        // Restore ALL saved canvas contents
-        allPositions.forEach(canvasId => {
-            const targetCanvas = document.getElementById(canvasId);
-            if (targetCanvas && state.canvases[canvasId]) {
-                const ctx = targetCanvas.getContext('2d');
-                ctx.drawImage(state.canvases[canvasId], 0, 0);
-            }
-        });
+        // Restore canvas contents using the tile state manager
+        this.tileStateManager.restoreTileCanvasState(tileIndex, this.getCanvasElements());
         
         // Restore tilemap states
-        if (typeof tilemapManager !== 'undefined') {
-            const mapPositionToCanvas = {
-                'top-left': 'preview-0-0',
-                'top-center': 'preview-0-1',
-                'top-right': 'preview-0-2',
-                'middle-left': 'preview-1-0',
-                'middle-right': 'preview-1-2',
-                'bottom-left': 'preview-2-0',
-                'bottom-center': 'preview-2-1',
-                'bottom-right': 'preview-2-2'
-            };
+        const tilemapState = this.tileStateManager.getTilemapState(tileIndex);
+        if (typeof tilemapManager !== 'undefined' && tilemapState) {
+            // Reuse the mapPositionToCanvas constant from the class
+            const mapPositionToCanvas = this.getMapPositionToCanvas();
             
             Object.entries(mapPositionToCanvas).forEach(([position, canvasId]) => {
-                tilemapManager.setTileState(canvasId, state.tilemapState[position]);
+                tilemapManager.setTileState(canvasId, tilemapState[position]);
             });
         }
         
-        console.log(`Restored canvas state for tile ${tileIndex} (including editor canvas, ${state.layerData?.length || 0} layers, and tool state)`);
+        console.log(`Restored canvas state for tile ${tileIndex}`);
     }
 
-    selectTile(tileElement) {
+    async selectTile(tileElement) {
         // Save the current tile's state before switching
         this.saveCurrentTileState();
         
@@ -268,8 +195,11 @@ class DualGridManager {
         if (tileData) {
             console.log('Tile data:', tileData);
             
+            // Show loading message
+            this.showLoadingMessage();
+            
             // Restore the canvas state for this tile
-            this.restoreTileState(tileIndex);
+            await this.restoreTileState(tileIndex);
             
             // Update the tilemap display based on saved state
             this.updateTilemapDisplay(tileData);
@@ -282,6 +212,9 @@ class DualGridManager {
             
             // Show the frame canvas for this tile
             this.showFrameCanvas(tileIndex);
+            
+            // Hide loading message
+            this.hideLoadingMessage();
         }
     }
 
@@ -289,18 +222,33 @@ class DualGridManager {
         console.log('Updating tilemap display for:', tileData.name);
 
         const tileIndex = tileData.index;
-        const state = this.tileCanvasStates.get(tileIndex);
+        const tileState = this.tileStateManager.getTileState(tileIndex);
         
-        if (!state) return;
+        if (!tileState) return;
 
         // Get the maps configuration
         const maps = tileData.maps;
 
-        // Save the tilemap state
-        state.tilemapState = { ...maps };
+        // Save the tilemap state using the tile state manager
+        this.tileStateManager.saveTilemapState(tileIndex, maps);
 
         // Map positions to canvas IDs for the 3x3 grid
-        const mapPositionToCanvas = {
+        const mapPositionToCanvas = this.getMapPositionToCanvas();
+
+        // Update the tilemap manager to reflect the selected tile's state
+        if (typeof tilemapManager !== 'undefined') {
+            Object.entries(mapPositionToCanvas).forEach(([position, canvasId]) => {
+                tilemapManager.setTileState(canvasId, maps[position]);
+            });
+        }
+    }
+
+    /**
+     * Get the mapping of tilemap positions to canvas IDs
+     * @returns {Object} Mapping of tilemap positions to canvas IDs
+     */
+    getMapPositionToCanvas() {
+        return {
             'top-left': 'preview-0-0',
             'top-center': 'preview-0-1',
             'top-right': 'preview-0-2',
@@ -310,13 +258,24 @@ class DualGridManager {
             'bottom-center': 'preview-2-1',
             'bottom-right': 'preview-2-2'
         };
+    }
 
-        // Update the tilemap manager to reflect the selected tile's state
-        if (typeof tilemapManager !== 'undefined') {
-            Object.entries(mapPositionToCanvas).forEach(([position, canvasId]) => {
-                tilemapManager.setTileState(canvasId, maps[position]);
-            });
-        }
+    /**
+     * Get references to all canvas elements
+     * @returns {Object} Object containing references to all canvas elements
+     */
+    getCanvasElements() {
+        return {
+            'preview-0-0': document.getElementById('preview-0-0'),
+            'preview-0-1': document.getElementById('preview-0-1'),
+            'preview-0-2': document.getElementById('preview-0-2'),
+            'preview-1-0': document.getElementById('preview-1-0'),
+            'editor-canvas': document.getElementById('editor-canvas'),
+            'preview-1-2': document.getElementById('preview-1-2'),
+            'preview-2-0': document.getElementById('preview-2-0'),
+            'preview-2-1': document.getElementById('preview-2-1'),
+            'preview-2-2': document.getElementById('preview-2-2')
+        };
     }
 
     // Rest of your existing methods remain the same...
@@ -433,6 +392,7 @@ class DualGridManager {
 
         this.addDualGridCSS();
         this.setupFrameCanvases();
+        this.setupLoadingMessage();
     }
 
     setupEventListeners() {
@@ -447,140 +407,12 @@ class DualGridManager {
         this.addTileSizeControl();
         this.preventTilemapSquareSelection();
     }
+addDualGridCSS() {
+    // Styles have been moved to css/dual-grid.css
+    // This method is kept for backward compatibility but does nothing
+    console.log('Dual grid styles are now in css/dual-grid.css');
+}
 
-    addDualGridCSS() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .dual-grid-container {
-                margin: 15px 0;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .dual-grid-title {
-                font-size: 11px;
-                text-transform: uppercase;
-                color: var(--accent-tertiary);
-                margin-bottom: 8px;
-                letter-spacing: 0.5px;
-                text-align: center;
-                width: 100%;
-            }
-
-            .dual-grid {
-                display: grid;
-                gap: 2px;
-                background: var(--bg-medium);
-                padding: 4px;
-                border-radius: 4px;
-                border: 1px solid var(--border-color);
-                width: fit-content;
-            }
-
-            .dual-grid-tile {
-                position: relative;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: 1px solid var(--border-color);
-                overflow: hidden;
-            }
-
-            .dual-grid-tile:hover {
-                border-color: var(--accent-tertiary);
-                box-shadow: 0 0 4px rgba(0, 217, 255, 0.3);
-            }
-
-            .dual-grid-tile.selected {
-                background: var(--accent-primary);
-                border-color: var(--accent-primary);
-                box-shadow: 0 0 6px var(--border-glow);
-            }
-
-            .dual-grid-tile.has-frame {
-                border: 2px solid var(--accent-secondary);
-                box-shadow: 0 0 4px var(--border-glow);
-            }
-
-            .dual-grid-canvas {
-                width: 100%;
-                height: 100%;
-                image-rendering: pixelated;
-                image-rendering: crisp-edges;
-            }
-
-            .dual-grid-tile-info {
-                position: absolute;
-                bottom: 2px;
-                right: 2px;
-                font-size: 8px;
-                color: var(--text-primary);
-                background: rgba(0, 0, 0, 0.5);
-                padding: 1px 3px;
-                border-radius: 2px;
-            }
-
-            .dual-grid-controls {
-                margin-top: 10px;
-                display: flex;
-                gap: 10px;
-                align-items: center;
-                width: 100%;
-            }
-
-            .tile-size-control {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                flex: 1;
-            }
-
-            .tile-size-input {
-                width: 60px;
-                padding: 4px;
-                background: var(--bg-light);
-                border: 1px solid var(--border-color);
-                color: var(--text-primary);
-                border-radius: 4px;
-            }
-
-            .tile-size-label {
-                font-size: 11px;
-                color: var(--text-secondary);
-            }
-
-            .dual-grid-apply-btn {
-                padding: 4px 8px;
-                font-size: 10px;
-            }
-
-            .frame-canvases-container {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                z-index: 1000;
-                display: none;
-            }
-
-            .frame-canvas {
-                position: absolute;
-                image-rendering: pixelated;
-                image-rendering: crisp-edges;
-                border: 2px solid var(--accent-secondary);
-                box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            }
-
-            .frame-canvas.visible {
-                opacity: 1;
-            }
-        `;
-        document.head.appendChild(style);
-    }
 
     addTileSizeControl() {
         const controls = document.createElement('div');
@@ -833,6 +665,7 @@ class DualGridManager {
         }
     }
 
+
     setupFrameCanvases() {
         const mainCanvas = document.getElementById('editor-canvas');
         if (!mainCanvas) {
@@ -855,17 +688,154 @@ class DualGridManager {
             frameCanvas.width = mainCanvas.width;
             frameCanvas.height = mainCanvas.height;
             frameCanvas.dataset.tileIndex = i;
-            
+
             frameCanvas.style.left = '0';
             frameCanvas.style.top = '0';
             frameCanvas.style.width = `${mainCanvas.width}px`;
             frameCanvas.style.height = `${mainCanvas.height}px`;
-            
+
             this.frameCanvasesContainer.appendChild(frameCanvas);
             this.frameCanvases.push(frameCanvas);
         }
 
         document.body.appendChild(this.frameCanvasesContainer);
+    }
+
+    setupLoadingMessage() {
+        // Create loading message overlay
+        this.loadingMessage = document.createElement('div');
+        this.loadingMessage.id = 'dual-grid-loading';
+        this.loadingMessage.className = 'dual-grid-loading';
+        this.loadingMessage.style.display = 'none';
+        
+        const message = document.createElement('div');
+        message.className = 'loading-message';
+        message.textContent = 'Loading tile...';
+        
+        this.loadingMessage.appendChild(message);
+        document.body.appendChild(this.loadingMessage);
+    }
+
+    showLoadingMessage() {
+        if (this.loadingMessage) {
+            this.loadingMessage.style.display = 'flex';
+        }
+    }
+
+    hideLoadingMessage() {
+        if (this.loadingMessage) {
+            this.loadingMessage.style.display = 'none';
+        }
+    }
+
+    // NEW: Create a new instance of the current tile application
+    addNewFrames() {
+        console.log('Creating new instance of current tile application');
+
+        // Get the currently selected tile
+        const currentTileIndex = this.selectedTile ? parseInt(this.selectedTile.dataset.index) : 0;
+        const currentTileData = this.dualGridData.tiles[currentTileIndex];
+
+        if (!currentTileData) {
+            console.error('No tile selected or tile data not found');
+            if (typeof Notifications !== 'undefined') {
+                const notifications = new Notifications();
+                notifications.error('No tile selected. Please select a tile first.');
+            }
+            return;
+        }
+
+        // Save the current state of the selected tile
+        this.saveCurrentTileState();
+
+        // Find an available slot for the new instance (look for first empty slot)
+        let newTileIndex = -1;
+        for (let i = 0; i < 16; i++) {
+            const tileData = this.dualGridData.tiles[i];
+            const state = this.tileCanvasStates.get(i);
+            
+            // Check if this tile has no frame (is empty)
+            if (!tileData.frame || !tileData.frame.canvasImage) {
+                newTileIndex = i;
+                break;
+            }
+        }
+
+        // If no empty slots, find the next available index beyond current tiles
+        if (newTileIndex === -1) {
+            newTileIndex = this.dualGridData.tiles.length;
+            if (newTileIndex >= 16) {
+                if (typeof Notifications !== 'undefined') {
+                    const notifications = new Notifications();
+                    notifications.error('Maximum 16 tiles reached. Cannot create more.');
+                }
+                return;
+            }
+        }
+
+        // Create a new tile data object based on the current tile
+        const newTileData = {
+            index: newTileIndex,
+            position: `row_${Math.floor(newTileIndex/4)}_col_${newTileIndex%4}`,
+            name: `tile_${newTileIndex}`,
+            overlaps: [],
+            neighbors: {
+                "top-left": false,
+                "top-right": false,
+                "bottom-left": false,
+                "bottom-right": false
+            },
+            maps: {
+                "top-left": false,
+                "top-center": false,
+                "top-right": false,
+                "middle-left": false,
+                "middle-right": false,
+                "bottom-left": false,
+                "bottom-center": false,
+                "bottom-right": false
+            }
+        };
+
+        // Add the new tile to the dual grid data
+        if (newTileIndex >= this.dualGridData.tiles.length) {
+            this.dualGridData.tiles.push(newTileData);
+        } else {
+            this.dualGridData.tiles[newTileIndex] = newTileData;
+        }
+
+        // Initialize canvas storage for the new tile
+        this.tileCanvasStates.set(newTileIndex, {
+            canvases: this.createEmptyCanvasSet(),
+            tilemapState: this.createEmptyTilemapState(),
+            layerData: null,
+            toolState: {
+                currentTool: 'pencil',
+                currentColor: '#282828',
+                brushSize: 0,
+                opacity: 1.0
+            }
+        });
+
+        // Create a new frame for this tile
+        this.loadFrameForTile(newTileData);
+
+        // Update the dual grid UI to show the new tile
+        this.updateDualGridUI();
+
+        // Select the new tile
+        const newTileElement = this.tiles[newTileIndex];
+        if (newTileElement) {
+            this.selectTile(newTileElement);
+        }
+
+        console.log(`Created new tile instance at index ${newTileIndex}`);
+
+        // Show success notification
+        if (typeof Notifications !== 'undefined') {
+            const notifications = new Notifications();
+            notifications.success(`Created new tile instance at position ${newTileIndex}`);
+        }
     }
 
     showFrameCanvas(tileIndex) {

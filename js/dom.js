@@ -55,11 +55,13 @@ const DOM = {
             redoBtn: document.getElementById('redoBtn'),
             saveBtn: document.getElementById('saveBtn'),
             loadBtn: document.getElementById('loadBtn'),
+            addNewBtn: document.getElementById('addNewBtn'),
             exportBtn: document.getElementById('exportBtn'),
             addLayerBtn: document.getElementById('addLayerBtn'),
             saveColorBtn: document.getElementById('saveColorBtn'),
             importPaletteUrlBtn: document.getElementById('importPaletteUrlBtn'),
             settingsBtn: document.getElementById('settingsBtn'),
+
 
             // Zoom controls
             zoomInBtn: document.getElementById('zoomInBtn'),

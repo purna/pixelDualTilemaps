@@ -20,11 +20,12 @@ const State = {
     // UI state
     showLayers: false,
     paletteColors: [
-        '#282828', '#ffffff', '#ff0000', '#00ff00', 
+        '#282828', '#ffffff', '#ff0000', '#00ff00',
         '#0000ff', '#ffff00', '#ff00ff', '#00ffff',
         '#ffa500', '#800080', '#ffc0cb', '#a52a2a',
         '#808080', '#c0c0c0', '#90ee90', '#ff6347'
     ],
+    recentColors: [],
     
     // File state
     hasUnsavedChanges: false,

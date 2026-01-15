@@ -5,7 +5,77 @@ const PaletteManager = {
     init() {
         this.renderPalette();
         this.setupEventListeners();
+        this.initColorHistory();
         console.log('Palette Manager initialized');
+    },
+    
+    /**
+     * Initialize color history overlay
+     */
+    initColorHistory() {
+        // Create color history overlay if it doesn't exist
+        const historyOverlay = document.querySelector('.floating-color-history');
+        if (historyOverlay) {
+            // Add event listeners to color swatches
+            const swatches = historyOverlay.querySelectorAll('.color-swatch');
+            swatches.forEach((swatch, index) => {
+                swatch.addEventListener('click', () => {
+                    if (State.recentColors[index]) {
+                        this.setCurrentColor(State.recentColors[index]);
+                        this.updateColorHistoryDisplay();
+                    }
+                });
+            });
+
+            // Initialize display
+            this.updateColorHistoryDisplay();
+        }
+    },
+
+    /**
+     * Update the color history display
+     */
+    updateColorHistoryDisplay() {
+        const swatches = document.querySelectorAll('.color-history-swatches .color-swatch');
+        if (!swatches.length) return;
+
+        swatches.forEach((swatch, index) => {
+            if (State.recentColors[index]) {
+                swatch.style.backgroundColor = State.recentColors[index];
+                swatch.title = `Recent Color ${index + 1} (Press ${index + 1}) - ${State.recentColors[index]}`;
+            } else {
+                swatch.style.backgroundColor = 'transparent';
+                swatch.style.border = '2px dashed var(--border-color)';
+                swatch.title = `Empty slot ${index + 1}`;
+            }
+
+            // Mark active color
+            if (State.currentColor && State.recentColors[index] === State.currentColor) {
+                swatch.classList.add('active');
+            } else {
+                swatch.classList.remove('active');
+            }
+        });
+    },
+    
+    /**
+     * Add color to history when a color is used.
+     */
+    addToHistory(hex) {
+        // Update recent colors (keep only last 4)
+        const colorIndex = State.recentColors.indexOf(hex);
+        if (colorIndex > -1) {
+            // Move existing color to front
+            State.recentColors.splice(colorIndex, 1);
+        }
+        State.recentColors.unshift(hex);
+        // Keep only last 4 colors
+        if (State.recentColors.length > 4) {
+            State.recentColors = State.recentColors.slice(0, 4);
+        }
+
+        // Update color history display
+        this.updateColorHistoryDisplay();
     },
     
     setupEventListeners() {
@@ -61,6 +131,8 @@ const PaletteManager = {
             DOM.elements.colorPicker.value = color;
             DOM.elements.colorHex.value = color;
             this.updateActiveSwatch(color);
+            // Add to history when color is set
+            this.addToHistory(color);
         }
     },
     

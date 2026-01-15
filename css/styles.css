@@ -411,6 +411,8 @@ button {
     width: 120px;
 }
 
+
+
 .brush-size-display {
     font-family: 'Inter', sans-serif;
     font-size: 10px;
@@ -442,7 +444,7 @@ button {
 /* FLOATING BRUSH CONTROLS OVERLAY */
 .brush-controls-overlay {
     position: fixed;
-    bottom: 10px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
@@ -451,6 +453,23 @@ button {
     cursor: move;
     /* Indicate it's draggable */
 }
+
+.brush-controls-overlay .grippy {
+    display: inline-block;
+    cursor: move;
+    margin-right: .3em;
+    color: #cccccc;
+    text-shadow: 1px 0 1px black;
+}
+
+.brush-controls-overlay .grippy::before {
+    content: '\f58e';  /* Unicode for grippy icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 100%;
+}
+
+
 
 .brush-controls-overlay .brush-controls {
     background: rgba(26, 26, 46, 0.95);
@@ -496,7 +515,6 @@ button {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 12px 16px 12px 16px;
-    padding-right: 140px;
     /* Extra space for opacity control */
     display: flex;
     align-items: center;
@@ -642,6 +660,78 @@ canvas {
     border: 2px solid var(--accent-primary);
     transform: scale(1.1);
     box-shadow: 0 0 8px var(--border-glow);
+}
+
+/* Floating Color History Overlay */
+.floating-color-history {
+    position: fixed;
+    top: 50%;
+    left: 140px;
+    transform: translateY(-50%);
+    z-index: 1000;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: move;
+    user-select: none;
+}
+
+.floating-color-history .grippy {
+    display: block;
+    cursor: move;
+    margin: 0 auto;
+    color: #cccccc;
+    text-shadow: 1px 0 1px black;
+    object-fit: contain;
+}
+
+.floating-color-history .grippy::before {
+    content: '\f58d';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 100%;
+    object-fit: contain;
+}
+
+
+.color-history-swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Color swatch */
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-color);
+}
+
+.color-swatch.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.5);
+}
+
+/* Color history label */
+.color-history-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 2px;
+    font-family: 'Inter', sans-serif;
 }
 
 .color-controls {
@@ -1126,25 +1216,35 @@ input[type="range"]::-moz-range-thumb {
     }
 
     /* Responsive floating brush controls */
-    .brush-controls-overlay {
-        position: fixed;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        top: auto;
-    }
-
-    .brush-controls-overlay .brush-controls {
-        flex-direction: column;
-        gap: 8px;
-        padding: 8px 12px;
-    }
-
-    .brush-controls-overlay .preset-sizes {
-        margin-left: 0;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
+        .brush-controls-overlay {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            top: auto;
+        }
+    
+        .brush-controls-overlay .brush-controls {
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px 12px;
+        }
+    
+        .brush-controls-overlay .preset-sizes {
+            margin-left: 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    
+        .brush-controls-overlay .brush-size-display,
+        .brush-controls-overlay .opacity-display {
+            display: none;
+        }
+    
+        .brush-controls-overlay .brush-size-display:hover,
+        .brush-controls-overlay .opacity-display:hover {
+            display: inline;
+        }
 
 }
 
@@ -2064,3 +2164,5 @@ input[type="range"]::-moz-range-thumb {
     margin-bottom: 15px;
     border: 1px solid var(--border-color);
 }
+
+

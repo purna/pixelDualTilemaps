@@ -12,6 +12,9 @@ const TilemapCore = {
         console.log('Tilemap Core initialized');
     },
     
+    // Flag to prevent drawing during tile switching
+    isSwitchingTiles: false,
+    
     setupEventListeners() {
         // Apply local listeners to ALL 9 canvases to handle drawing
         DOM.allCanvases.forEach(canvas => {

@@ -235,6 +235,82 @@ const FileManager = {
             }
         }
     },
+
+    // Export combined center tiles from all 16 tilemaps
+    exportCombinedCenterTiles() {
+        try {
+            // Create a new canvas to combine the center tiles
+            const combinedCanvas = document.createElement('canvas');
+            combinedCanvas.width = Config.TILE_DIM * Config.PIXEL_SIZE * 4; // 4x4 grid of tiles
+            combinedCanvas.height = Config.TILE_DIM * Config.PIXEL_SIZE * 4;
+            const combinedCtx = combinedCanvas.getContext('2d');
+            
+            // Clear the combined canvas
+            combinedCtx.clearRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+            
+            // Get all canvases from the tilemap grid
+            const canvases = [];
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const canvasId = `preview-${row}-${col}`;
+                    const canvas = document.getElementById(canvasId);
+                    if (canvas) {
+                        canvases.push({
+                            id: canvasId,
+                            canvas: canvas,
+                            row: row,
+                            col: col
+                        });
+                    }
+                }
+            }
+            
+            // For each tilemap, extract the center tile and place it in the combined canvas
+            canvases.forEach((canvasInfo, index) => {
+                const row = canvasInfo.row;
+                const col = canvasInfo.col;
+                const canvas = canvasInfo.canvas;
+                
+                // Calculate the position in the 4x4 grid
+                const gridX = col;
+                const gridY = row;
+                
+                // Calculate the position to draw the center tile in the combined canvas
+                const destX = gridX * Config.TILE_DIM * Config.PIXEL_SIZE;
+                const destY = gridY * Config.TILE_DIM * Config.PIXEL_SIZE;
+                
+                // Calculate the center tile position in the source canvas
+                const centerTileX = (canvas.width / 2) - (Config.TILE_DIM * Config.PIXEL_SIZE / 2);
+                const centerTileY = (canvas.height / 2) - (Config.TILE_DIM * Config.PIXEL_SIZE / 2);
+                
+                // Draw the center tile from the source canvas to the combined canvas
+                combinedCtx.drawImage(
+                    canvas,
+                    centerTileX, centerTileY, Config.TILE_DIM * Config.PIXEL_SIZE, Config.TILE_DIM * Config.PIXEL_SIZE,
+                    destX, destY, Config.TILE_DIM * Config.PIXEL_SIZE, Config.TILE_DIM * Config.PIXEL_SIZE
+                );
+            });
+            
+            // Export the combined canvas as an image
+            const dataURL = combinedCanvas.toDataURL('image/png');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `combined-center-tiles-${timestamp}.png`;
+            
+            this.downloadDataURL(dataURL, filename);
+            
+            if (typeof Notifications !== 'undefined') {
+                const notifications = new Notifications();
+                notifications.success('Combined center tiles exported as PNG');
+            }
+            
+        } catch (error) {
+            console.error('Combined center tiles export error:', error);
+            if (typeof Notifications !== 'undefined') {
+                const notifications = new Notifications();
+                notifications.error('Error exporting combined center tiles');
+            }
+        }
+    },
     
     // Export as sprite sheet with all 16 tilemaps in 4x4 grid
     exportSpriteSheet() {

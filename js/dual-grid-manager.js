@@ -437,11 +437,12 @@ class DualGridManager {
         this.addTileSizeControl();
         this.preventTilemapSquareSelection();
     }
-addDualGridCSS() {
-    // Styles have been moved to css/dual-grid.css
-    // This method is kept for backward compatibility but does nothing
-    console.log('Dual grid styles are now in css/dual-grid.css');
-}
+
+    addDualGridCSS() {
+        // Styles have been moved to css/dual-grid.css
+        // This method is kept for backward compatibility but does nothing
+        console.log('Dual grid styles are now in css/dual-grid.css');
+    }
 
 
     addTileSizeControl() {
@@ -480,6 +481,170 @@ addDualGridCSS() {
         const dualGridContainer = document.getElementById('dual-grid-container');
         if (dualGridContainer) {
             dualGridContainer.appendChild(controls);
+        }
+
+        this.addImageSelector(dualGridContainer);
+    }
+
+    addImageSelector(container) {
+        const imageControl = document.createElement('div');
+        imageControl.className = 'tile-image-control';
+
+        const imageLabel = document.createElement('span');
+        imageLabel.className = 'tile-image-label';
+        imageLabel.textContent = 'Watermark Image:';
+
+        const imageSelect = document.createElement('select');
+        imageSelect.className = 'tile-image-select';
+        imageSelect.id = 'watermark-image-select';
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'None';
+        imageSelect.appendChild(defaultOption);
+
+        const images = ['tileset_default_1.png', 'tileset_default_2.png', 'tileset_default_3.png'];
+        images.forEach(image => {
+            const option = document.createElement('option');
+            option.value = image;
+            option.textContent = image;
+            imageSelect.appendChild(option);
+        });
+
+        const loadBtn = document.createElement('button');
+        loadBtn.className = 'btn dual-grid-load-btn';
+        loadBtn.textContent = 'Load Watermark';
+        loadBtn.addEventListener('click', () => {
+            const selectedImage = imageSelect.value;
+            console.log('Load button clicked, selected image:', selectedImage);
+            if (selectedImage) {
+                this.loadWatermarkImage(selectedImage);
+            } else {
+                console.log('No image selected');
+            }
+        });
+
+        imageControl.appendChild(imageLabel);
+        imageControl.appendChild(imageSelect);
+        imageControl.appendChild(loadBtn);
+
+        if (container) {
+            container.appendChild(imageControl);
+        }
+    }
+
+loadWatermarkImage(imageName) {
+        console.log(`Loading watermark image: ${imageName}`);
+        const image = new Image();
+        
+        // Try to load the image with crossOrigin attribute to avoid CORS issues
+        image.crossOrigin = 'anonymous';
+        image.src = `gfx/${imageName}`;
+        
+        image.onload = () => {
+            console.log(`Watermark image loaded successfully: ${imageName}`);
+            console.log('Image dimensions:', image.width, 'x', image.height);
+            this.watermarkImage = image;
+            
+            // If no tile is selected, select the first tile
+            if (!this.selectedTile && this.tiles.length > 0) {
+                console.log('No tile selected, selecting first tile');
+                this.selectTile(this.tiles[0]);
+            }
+            
+            // Apply watermark immediately
+            this.applyWatermarkAsBackground();
+            
+            // Show success notification
+            if (typeof Notifications !== 'undefined') {
+                const notifications = new Notifications();
+                notifications.success(`Watermark loaded: ${imageName}`);
+            }
+        };
+        
+        image.onerror = (error) => {
+            console.error(`Failed to load watermark image: ${imageName}`, error);
+            console.log('Trying alternative path...');
+            
+            // Try alternative path
+            const altImage = new Image();
+            altImage.crossOrigin = 'anonymous';
+            altImage.src = `./gfx/${imageName}`;
+            
+            altImage.onload = () => {
+                console.log(`Watermark image loaded successfully from alternative path: ${imageName}`);
+                this.watermarkImage = altImage;
+                
+                if (!this.selectedTile && this.tiles.length > 0) {
+                    this.selectTile(this.tiles[0]);
+                }
+                
+                this.applyWatermarkAsBackground();
+                
+                if (typeof Notifications !== 'undefined') {
+                    const notifications = new Notifications();
+                    notifications.success(`Watermark loaded: ${imageName}`);
+                }
+            };
+            
+            altImage.onerror = (altError) => {
+                console.error(`Failed to load watermark image from alternative path: ${imageName}`, altError);
+                
+                if (typeof Notifications !== 'undefined') {
+                    const notifications = new Notifications();
+                    notifications.error(`Failed to load watermark: ${imageName}`);
+                }
+            };
+        };
+    }
+
+    applyWatermarkToEditorCanvas() {
+        if (!this.watermarkImage || !this.selectedTile) return;
+
+        const editorCanvas = document.getElementById('editor-canvas');
+        if (!editorCanvas) return;
+
+        const ctx = editorCanvas.getContext('2d');
+        const tileIndex = parseInt(this.selectedTile.dataset.index);
+
+        // Calculate the position in the watermark image based on the selected tile
+        const tileRow = Math.floor(tileIndex / 4);
+        const tileCol = tileIndex % 4;
+        const tileSize = 64; // Assuming each tile in the watermark is 64x64
+        const srcX = tileCol * tileSize;
+        const srcY = tileRow * tileSize;
+
+        // Store the current canvas content before applying watermark
+        const imageData = ctx.getImageData(0, 0, editorCanvas.width, editorCanvas.height);
+
+        // Draw the selected part of the watermark image
+        ctx.save();
+        ctx.globalAlpha = 0.5; // Semi-transparent
+        ctx.drawImage(
+            this.watermarkImage,
+            srcX, srcY, tileSize, tileSize,
+            0, 0, editorCanvas.width, editorCanvas.height
+        );
+        ctx.restore();
+
+        // Restore the drawing content on top of the watermark
+        ctx.putImageData(imageData, 0, 0);
+    }
+    
+    applyWatermarkAsBackground() {
+        console.log('applyWatermarkAsBackground called');
+        console.log('watermarkImage:', this.watermarkImage ? 'exists' : 'null');
+        console.log('selectedTile:', this.selectedTile ? 'exists' : 'null');
+        
+        if (!this.watermarkImage || !this.selectedTile) {
+            console.log('Early return - missing watermark image or selected tile');
+            return;
+        }
+
+        // Simply trigger a preview update - the watermark will be drawn automatically
+        if (typeof TilemapCore !== 'undefined' && TilemapCore.updatePreviews) {
+            TilemapCore.updatePreviews();
+            console.log('Watermark application completed - previews updated');
         }
     }
 
@@ -915,6 +1080,7 @@ addDualGridCSS() {
         ctx.fillText(`Tile ${tileIndex}`, frameCanvas.width / 2, 10);
     }
 }
+
 
 // Create global dual grid manager instance
 const dualGridManager = new DualGridManager();

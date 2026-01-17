@@ -251,6 +251,29 @@ handleEyedropper(e, targetCanvas) {
         // Clear the main editor canvas first
         DOM.editorCtx.clearRect(0, 0, Config.CANVAS_SIZE, Config.CANVAS_SIZE);
 
+        // Draw watermark FIRST as background layer (before layers)
+        if (typeof dualGridManager !== 'undefined' && 
+            dualGridManager.watermarkImage && 
+            dualGridManager.selectedTile) {
+            
+            const tileIndex = parseInt(dualGridManager.selectedTile.dataset.index);
+            const tileRow = Math.floor(tileIndex / 4);
+            const tileCol = tileIndex % 4;
+            const tileSize = 64; // Assuming each tile in the watermark is 64x64
+            const srcX = tileCol * tileSize;
+            const srcY = tileRow * tileSize;
+            
+            // Draw watermark as background with reduced opacity
+            DOM.editorCtx.save();
+            DOM.editorCtx.globalAlpha = 0.5;
+            DOM.editorCtx.drawImage(
+                dualGridManager.watermarkImage,
+                srcX, srcY, tileSize, tileSize,
+                0, 0, Config.CANVAS_SIZE, Config.CANVAS_SIZE
+            );
+            DOM.editorCtx.restore();
+        }
+
         // Composite all visible layers onto the main editor canvas
         // Draw in normal order so bottom layers in UI appear on bottom in canvas
         State.layers.forEach((layer, index) => {
@@ -268,7 +291,16 @@ handleEyedropper(e, targetCanvas) {
         const imageData = DOM.editorCtx.getImageData(0, 0, Config.CANVAS_SIZE, Config.CANVAS_SIZE);
         DOM.previewContexts.forEach((ctx, index) => {
             if (ctx) {
-                ctx.putImageData(imageData, 0, 0);
+                // Clear the preview canvas first
+                ctx.clearRect(0, 0, Config.CANVAS_SIZE, Config.CANVAS_SIZE);
+                
+                // Then composite the layer content on top using drawImage for proper alpha blending
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = Config.CANVAS_SIZE;
+                tempCanvas.height = Config.CANVAS_SIZE;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(imageData, 0, 0);
+                ctx.drawImage(tempCanvas, 0, 0);
             }
         });
 

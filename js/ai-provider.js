@@ -168,11 +168,58 @@
         style.id = 'pixel-ai-settings-styles';
         style.textContent = `
             .pixel-ai-provider-fields[hidden], #pixel-ai-openrouter-model-list[hidden] { display:none !important; }
-            .pixel-ai-form { padding:12px; max-height:65vh; overflow:auto; }
-            .pixel-ai-form label { display:block; margin:10px 0 5px; }
-            .pixel-ai-form input, .pixel-ai-form select { box-sizing:border-box; width:100%; padding:8px; }
-            .pixel-ai-help, .pixel-ai-status { font-size:.78rem; line-height:1.45; opacity:.85; }
-            .pixel-ai-form button { margin-top:10px; }
+            .pixel-ai-form { display:flex; flex-direction:column; gap:14px; color:var(--text-primary); }
+            .pixel-ai-form .settings-section {
+                margin:0; padding:12px; background:var(--bg-light);
+                border:1px solid var(--border-color); border-radius:6px;
+            }
+            .pixel-ai-form .section-heading {
+                display:flex; align-items:center; gap:8px; margin-bottom:10px;
+            }
+            .pixel-ai-form .property-group {
+                margin:0; padding:0; border:0; background:transparent;
+            }
+            .pixel-ai-form .property-group + .property-group { margin-top:12px; }
+            .pixel-ai-form .property-label {
+                display:block; margin-bottom:6px; font-size:.75rem;
+                font-weight:500; color:var(--text-primary);
+            }
+            .pixel-ai-form .settings-input,
+            .pixel-ai-form .settings-select {
+                box-sizing:border-box; width:100%; padding:8px 10px;
+                background:var(--bg-medium); border:1px solid var(--border-color);
+                border-radius:4px; color:var(--text-primary);
+                font:inherit; font-size:.8rem;
+            }
+            .pixel-ai-form .settings-input::placeholder { color:var(--text-secondary); }
+            .pixel-ai-form .settings-input:focus,
+            .pixel-ai-form .settings-select:focus {
+                outline:none; border-color:var(--accent-primary);
+                box-shadow:0 0 8px var(--border-glow);
+            }
+            .pixel-ai-form .pixel-ai-help {
+                margin:0 0 12px; color:var(--text-secondary);
+                font-size:.75rem; line-height:1.45;
+            }
+            .pixel-ai-form .pixel-ai-status {
+                min-height:1.25em; margin:0 0 12px; color:var(--accent-tertiary);
+                font-size:.75rem; line-height:1.45;
+            }
+            .pixel-ai-form .pixel-ai-actions { display:flex; flex-wrap:wrap; gap:8px; }
+            .pixel-ai-form .pixel-ai-actions .btn { flex:1 1 150px; justify-content:center; }
+            .pixel-ai-form .pixel-ai-load-models { width:100%; justify-content:center; margin-top:8px; }
+            .pixel-ai-form .pixel-ai-checkbox-label {
+                display:flex; align-items:flex-start; gap:8px; margin-top:12px;
+                font-size:.75rem; line-height:1.4; color:var(--text-primary);
+                cursor:pointer;
+            }
+            .pixel-ai-form .pixel-ai-checkbox-label input[type="checkbox"] {
+                flex-shrink:0; width:16px; height:16px; margin:1px 0 0;
+                accent-color:var(--accent-primary); cursor:pointer;
+            }
+            .pixel-ai-form .btn:disabled {
+                opacity:.55; cursor:not-allowed; transform:none; box-shadow:none;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -207,35 +254,72 @@
         panel.dataset.tabContent = 'pixel-ai';
         panel.innerHTML = `
             <div class="pixel-ai-form">
-                <h3>AI Provider</h3>
-                <p class="pixel-ai-help">Use an API key from the provider's developer platform. OpenAI API access is separate from a ChatGPT subscription. Keys are stored unencrypted in this browser profile.</p>
-                <label for="pixel-ai-provider-${index}">Provider</label>
-                <select id="pixel-ai-provider-${index}">
-                    <option value="gemini">Google Gemini</option><option value="openai">OpenAI API</option>
-                    <option value="claude">Anthropic Claude</option><option value="openrouter">OpenRouter</option>
-                </select>
-                <div class="pixel-ai-provider-fields" data-provider="gemini">
-                    <label for="pixel-ai-gemini-key-${index}">Gemini API key</label><input id="pixel-ai-gemini-key-${index}" type="password" autocomplete="off">
-                    <label for="pixel-ai-gemini-model-${index}">Gemini model</label><input id="pixel-ai-gemini-model-${index}" value="gemini-3.8-flash">
+                <div class="settings-section">
+                    <div class="section-heading"><i class="fas fa-key"></i> AI Provider</div>
+                    <p class="pixel-ai-help">Use an API key from the provider's developer platform. OpenAI API access is separate from a ChatGPT subscription. Keys are stored unencrypted in this browser profile.</p>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-provider-${index}">Provider</label>
+                        <select class="settings-select" id="pixel-ai-provider-${index}">
+                            <option value="gemini">Google Gemini</option><option value="openai">OpenAI API</option>
+                            <option value="claude">Anthropic Claude</option><option value="openrouter">OpenRouter</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="pixel-ai-provider-fields" data-provider="openai" hidden>
-                    <label for="pixel-ai-openai-key-${index}">OpenAI API key</label><input id="pixel-ai-openai-key-${index}" type="password" autocomplete="off">
-                    <label for="pixel-ai-openai-model-${index}">OpenAI model</label><input id="pixel-ai-openai-model-${index}" value="gpt-4.1-mini">
+                <div class="settings-section pixel-ai-provider-fields" data-provider="gemini">
+                    <div class="section-heading">Google Gemini</div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-gemini-key-${index}">API key</label>
+                        <input class="settings-input" id="pixel-ai-gemini-key-${index}" type="password" autocomplete="off" placeholder="Paste your Gemini API key">
+                    </div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-gemini-model-${index}">Model</label>
+                        <input class="settings-input" id="pixel-ai-gemini-model-${index}" value="gemini-3.8-flash">
+                    </div>
                 </div>
-                <div class="pixel-ai-provider-fields" data-provider="claude" hidden>
-                    <label for="pixel-ai-claude-key-${index}">Claude API key</label><input id="pixel-ai-claude-key-${index}" type="password" autocomplete="off">
-                    <label for="pixel-ai-claude-model-${index}">Claude model</label><input id="pixel-ai-claude-model-${index}" value="claude-sonnet-5">
+                <div class="settings-section pixel-ai-provider-fields" data-provider="openai" hidden>
+                    <div class="section-heading">OpenAI API</div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-openai-key-${index}">API key</label>
+                        <input class="settings-input" id="pixel-ai-openai-key-${index}" type="password" autocomplete="off" placeholder="Paste your OpenAI API key">
+                    </div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-openai-model-${index}">Model</label>
+                        <input class="settings-input" id="pixel-ai-openai-model-${index}" value="gpt-4.1-mini">
+                    </div>
                 </div>
-                <div class="pixel-ai-provider-fields" data-provider="openrouter" hidden>
-                    <label for="pixel-ai-openrouter-key-${index}">OpenRouter API key</label><input id="pixel-ai-openrouter-key-${index}" type="password" autocomplete="off">
-                    <label for="pixel-ai-openrouter-model-${index}">OpenRouter model</label><input id="pixel-ai-openrouter-model-${index}" value="openrouter/auto">
-                    <button type="button" class="pixel-ai-load-models">Load free models</button>
-                    <select id="pixel-ai-openrouter-model-list" hidden><option value="">Choose a free model…</option></select>
-                    <label><input type="checkbox" class="pixel-ai-fallback"> Try the next free model when this OpenRouter model is limited</label>
+                <div class="settings-section pixel-ai-provider-fields" data-provider="claude" hidden>
+                    <div class="section-heading">Anthropic Claude</div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-claude-key-${index}">API key</label>
+                        <input class="settings-input" id="pixel-ai-claude-key-${index}" type="password" autocomplete="off" placeholder="Paste your Claude API key">
+                    </div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-claude-model-${index}">Model</label>
+                        <input class="settings-input" id="pixel-ai-claude-model-${index}" value="claude-sonnet-5">
+                    </div>
                 </div>
-                <p class="pixel-ai-status" role="status"></p>
-                <button type="button" class="pixel-ai-test">Test selected provider</button>
-                <button type="button" class="pixel-ai-save">Save AI settings</button>
+                <div class="settings-section pixel-ai-provider-fields" data-provider="openrouter" hidden>
+                    <div class="section-heading">OpenRouter</div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-openrouter-key-${index}">API key</label>
+                        <input class="settings-input" id="pixel-ai-openrouter-key-${index}" type="password" autocomplete="off" placeholder="Paste your OpenRouter API key">
+                    </div>
+                    <div class="property-group">
+                        <label class="property-label" for="pixel-ai-openrouter-model-${index}">Model</label>
+                        <input class="settings-input" id="pixel-ai-openrouter-model-${index}" value="openrouter/auto">
+                        <button type="button" class="btn pixel-ai-load-models"><i class="fas fa-sync-alt"></i> Load free models</button>
+                        <select class="settings-select" id="pixel-ai-openrouter-model-list" hidden><option value="">Choose a free model…</option></select>
+                    </div>
+                    <label class="pixel-ai-checkbox-label"><input type="checkbox" class="pixel-ai-fallback"> Try the next free model when this OpenRouter model is limited</label>
+                </div>
+                <div class="settings-section">
+                    <div class="section-heading">Connection</div>
+                    <p class="pixel-ai-status" role="status"></p>
+                    <div class="pixel-ai-actions">
+                        <button type="button" class="btn pixel-ai-test"><i class="fas fa-bolt"></i> Test provider</button>
+                        <button type="button" class="btn primary pixel-ai-save"><i class="fas fa-save"></i> Save AI settings</button>
+                    </div>
+                </div>
             </div>
         `;
         panelsHost.appendChild(panel);

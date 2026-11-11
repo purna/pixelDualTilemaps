@@ -13,56 +13,46 @@
   if (!spec) return;
   const style = document.createElement('style');
   style.textContent = `
-    #pixel-ai-create-launch{position:fixed;right:18px;bottom:18px;z-index:1001;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:linear-gradient(135deg,var(--accent-primary,#00ff41),var(--accent-tertiary,#00d9ff));color:#00160a;border:1px solid var(--accent-primary,#00ff41);border-radius:6px;font:700 12px/1 'Inter',system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 0 18px var(--border-glow,rgba(0,255,65,.3)),0 4px 14px rgba(0,0,0,.45);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,filter .2s ease}
-    #pixel-ai-create-launch:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 0 26px var(--border-glow,rgba(0,255,65,.45)),0 8px 20px rgba(0,0,0,.5)}
+    #pixel-ai-create-launch{position:fixed;right:18px;bottom:18px;z-index:9998;background:#7048e8;color:#fff;border:0;border-radius:10px;padding:11px 16px;font:600 14px 'Inter',system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.35),0 0 20px rgba(112,72,232,.18);cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1)}
+    #pixel-ai-create-launch:hover{background:#8257f0;transform:translateY(-1px);box-shadow:0 6px 22px rgba(112,72,232,.5)}
     #pixel-ai-create-launch:active{transform:translateY(0)}
-    #pixel-ai-create-launch i{font-size:13px}
-    #pixel-ai-create{--ai-purple:#a855f7;--ai-purple-light:#c084fc;--ai-purple-deep:#7c3aed;--ai-purple-glow:rgba(168,85,247,.42);--ai-purple-soft:rgba(168,85,247,.14);position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(12,7,22,.82);backdrop-filter:blur(4px);font-family:'Inter',system-ui,sans-serif;color:var(--text-primary,#e0e7ff)}
+
+    #pixel-ai-create{position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at 50% 40%,rgba(112,72,232,.16),rgba(0,0,0,.84) 55%);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;font:14px 'Inter',system-ui,sans-serif;color:var(--text-primary,#e0e7ff)}
     #pixel-ai-create.open{display:flex}
-    #pixel-ai-create .card{position:relative;display:flex;flex-direction:column;width:min(660px,94vw);max-height:88vh;overflow:hidden;background:linear-gradient(140deg,#1a1a2e 0%,#24163f 52%,#17162f 100%);border:1px solid rgba(168,85,247,.38);border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 42px rgba(168,85,247,.16)}
-    #pixel-ai-create .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--ai-purple-deep,#7c3aed),var(--ai-purple,#a855f7),var(--ai-purple-light,#c084fc),var(--ai-purple,#a855f7))}
-    #pixel-ai-create.open .card{animation:pixelAiPop .22s ease-out}
-    @keyframes pixelAiPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-    #pixel-ai-create .pixel-ai-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 14px;border-bottom:1px solid rgba(168,85,247,.22);background:rgba(37,20,63,.5)}
-    #pixel-ai-create .pixel-ai-kicker{display:flex;align-items:center;gap:6px;font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ai-purple-light,#c084fc)}
-    #pixel-ai-create h2{display:flex;align-items:center;gap:8px;margin:5px 0 0;font-size:1.15rem;line-height:1.2;font-weight:700;color:#e9d5ff;text-shadow:0 0 12px var(--ai-purple-glow,rgba(168,85,247,.42))}
-    #pixel-ai-create .pixel-ai-close{width:32px;height:32px;display:grid;place-items:center;flex-shrink:0;background:transparent;border:1px solid transparent;border-radius:4px;color:var(--text-secondary,#94a3b8);font-size:22px;line-height:1;cursor:pointer;transition:all .2s ease}
-    #pixel-ai-create .pixel-ai-close:hover{color:var(--ai-purple-light,#c084fc);background:var(--ai-purple-soft,rgba(168,85,247,.14));border-color:rgba(168,85,247,.35)}
-    #pixel-ai-create .pixel-ai-body{padding:18px 20px 20px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--ai-purple,#a855f7) var(--bg-dark,#1a1a2e)}
-    #pixel-ai-create .pixel-ai-body::-webkit-scrollbar,#pixel-ai-create pre::-webkit-scrollbar{width:8px;height:8px}
-    #pixel-ai-create .pixel-ai-body::-webkit-scrollbar-track,#pixel-ai-create pre::-webkit-scrollbar-track{background:var(--bg-dark,#1a1a2e);border-radius:4px}
-    #pixel-ai-create .pixel-ai-body::-webkit-scrollbar-thumb,#pixel-ai-create pre::-webkit-scrollbar-thumb{background:var(--ai-purple,#a855f7);border-radius:4px}
-    #pixel-ai-create .pixel-ai-body::-webkit-scrollbar-thumb:hover,#pixel-ai-create pre::-webkit-scrollbar-thumb:hover{background:var(--ai-purple-light,#c084fc)}
-    #pixel-ai-create .pixel-ai-intro{margin:0 0 16px;color:var(--text-secondary,#94a3b8);font-size:.82rem;line-height:1.5}
-    #pixel-ai-create .pixel-ai-label{display:block;margin-bottom:7px;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ai-purple-light,#c084fc)}
-    #pixel-ai-create textarea{box-sizing:border-box;width:100%;min-height:110px;margin:0 0 14px;padding:12px;background:var(--bg-darkest,#0f0f1b);border:1px solid rgba(168,85,247,.24);border-radius:6px;color:var(--text-primary,#e0e7ff);font:14px/1.5 'Inter',system-ui,sans-serif;resize:vertical}
-    #pixel-ai-create textarea::placeholder{color:var(--text-secondary,#94a3b8)}
-    #pixel-ai-create textarea:focus{outline:none;border-color:var(--ai-purple,#a855f7);box-shadow:0 0 0 3px rgba(168,85,247,.12),0 0 14px var(--ai-purple-glow,rgba(168,85,247,.42))}
-    #pixel-ai-create .pixel-ai-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    #pixel-ai-create .pixel-ai-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;background:var(--bg-light,#1e293b);border:1px solid var(--border-color,#2d3748);border-radius:4px;color:var(--text-primary,#e0e7ff);font:600 12px/1 'Inter',system-ui,sans-serif;cursor:pointer;transition:all .2s ease}
-    #pixel-ai-create .pixel-ai-btn:hover{background:var(--bg-medium,#16213e);border-color:var(--ai-purple,#a855f7);transform:translateY(-1px)}
-    #pixel-ai-create .pixel-ai-btn.primary{background:linear-gradient(135deg,var(--ai-purple-deep,#7c3aed),var(--ai-purple,#a855f7));border-color:var(--ai-purple,#a855f7);color:#fff;font-weight:700;box-shadow:0 0 14px var(--ai-purple-glow,rgba(168,85,247,.42))}
-    #pixel-ai-create .pixel-ai-btn.primary:hover{filter:brightness(1.08);box-shadow:0 0 22px var(--ai-purple-glow,rgba(168,85,247,.55))}
-    #pixel-ai-create .pixel-ai-btn.apply:not(:disabled){border-color:var(--ai-purple-light,#c084fc);color:var(--ai-purple-light,#c084fc)}
-    #pixel-ai-create .pixel-ai-btn.apply:not(:disabled):hover{background:var(--ai-purple-soft,rgba(168,85,247,.14));box-shadow:0 0 12px rgba(168,85,247,.25)}
-    #pixel-ai-create .pixel-ai-btn.ghost{margin-left:auto;background:transparent;color:var(--text-secondary,#94a3b8)}
-    #pixel-ai-create .pixel-ai-btn.ghost:hover{color:var(--ai-purple-light,#c084fc);background:var(--ai-purple-soft,rgba(168,85,247,.14));border-color:rgba(168,85,247,.35)}
-    #pixel-ai-create .pixel-ai-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
-    #pixel-ai-create .pixel-ai-status{min-height:1.3em;margin:0 0 16px;color:var(--ai-purple-light,#c084fc);font-size:.78rem;line-height:1.45}
-    #pixel-ai-create .pixel-ai-preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary,#94a3b8)}
-    #pixel-ai-create .pixel-ai-preview-hint{color:var(--ai-purple-light,#c084fc);letter-spacing:.08em}
-    #pixel-ai-create pre{white-space:pre-wrap;word-break:break-word;max-height:34vh;overflow:auto;margin:0;padding:12px;background:var(--bg-darkest,#0f0f1b);border:1px solid rgba(168,85,247,.22);border-radius:6px;color:#e9d5ff;font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;scrollbar-width:thin;scrollbar-color:var(--ai-purple,#a855f7) var(--bg-dark,#1a1a2e)}
-    #pixel-ai-create-launch:focus-visible,#pixel-ai-create button:focus-visible,#pixel-ai-create textarea:focus-visible{outline:2px solid var(--ai-purple-light,#c084fc);outline-offset:2px}
-    @media (max-width:520px){#pixel-ai-create{padding:12px}#pixel-ai-create-launch{right:12px;bottom:12px;padding:10px 14px}#pixel-ai-create .pixel-ai-modal-header,#pixel-ai-create .pixel-ai-body{padding-left:16px;padding-right:16px}#pixel-ai-create .pixel-ai-actions .pixel-ai-btn{flex:1 1 100%}#pixel-ai-create .pixel-ai-btn.ghost{margin-left:0}}
+    #pixel-ai-create .card{position:relative;overflow:hidden;background:linear-gradient(180deg,#1d1930 0%,var(--bg-dark,#1a1a2e) 42%);border:1px solid rgba(168,85,247,.45);border-radius:12px;padding:24px;width:min(640px,94vw);max-height:88vh;overflow-y:auto;box-sizing:border-box;box-shadow:0 18px 60px rgba(0,0,0,.68),0 0 38px rgba(112,72,232,.24),0 0 0 1px rgba(255,255,255,.03) inset;color:var(--text-primary,#e0e7ff)}
+    #pixel-ai-create .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#7048e8,#a855f7,#c084fc,transparent);box-shadow:0 0 18px rgba(168,85,247,.55)}
+    #pixel-ai-create h2{margin:0 0 8px;display:flex;align-items:center;gap:9px;color:#c084fc;font-size:1.35rem;font-weight:700;letter-spacing:.01em}
+    #pixel-ai-create h2 i{color:#a855f7;text-shadow:0 0 16px rgba(168,85,247,.65)}
+    #pixel-ai-create p{margin:0 0 16px;color:var(--text-secondary,#a5b0c4);font-size:.82rem;line-height:1.55}
+    #pixel-ai-create textarea{box-sizing:border-box;width:100%;min-height:108px;padding:12px 13px;background:#100f1d;border:1px solid rgba(168,85,247,.25);border-radius:7px;color:var(--text-primary,#e0e7ff);font:inherit;font-size:.82rem;line-height:1.55;resize:vertical;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+    #pixel-ai-create textarea::placeholder{color:#6b7280}
+    #pixel-ai-create textarea:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.16),0 0 16px rgba(168,85,247,.14)}
+
+    #pixel-ai-create .actions{display:flex;justify-content:flex-end;align-items:center;gap:9px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid rgba(168,85,247,.18)}
+    #pixel-ai-create button{appearance:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:104px;padding:8px 14px;border:1px solid rgba(168,85,247,.26);border-radius:5px;background:#211d36;color:#e9d5ff;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+    #pixel-ai-create button:hover:not(:disabled){background:#2c2547;border-color:rgba(192,132,252,.65);color:#f3e8ff;transform:translateY(-1px);box-shadow:0 4px 14px rgba(112,72,232,.24)}
+    #pixel-ai-create button:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+    #pixel-ai-create button.generate{background:linear-gradient(135deg,#7048e8,#a855f7);border:none;color:#fff;font-weight:700;box-shadow:0 0 14px rgba(168,85,247,.35);animation:pixelAiCreatePulse 2s ease infinite}
+    #pixel-ai-create button.generate:hover{background:linear-gradient(135deg,#8257f0,#b56cff);box-shadow:0 0 22px rgba(168,85,247,.55);transform:translateY(-1px) scale(1.02)}
+    #pixel-ai-create button.apply{background:rgba(168,85,247,.13);border-color:rgba(168,85,247,.48);color:#d8b4fe}
+    #pixel-ai-create button.apply:hover:not(:disabled){background:rgba(168,85,247,.22);border-color:#c084fc;color:#f3e8ff}
+    #pixel-ai-create button.apply:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+    #pixel-ai-create button.close{background:transparent;border-color:rgba(168,85,247,.18);color:#9ca3af;box-shadow:none}
+    #pixel-ai-create button.close:hover{background:#211d36;border-color:rgba(168,85,247,.35);color:#e9d5ff}
+
+    #pixel-ai-create .status{min-height:20px;margin:16px 0;color:#c4b5fd;font-size:.78rem;line-height:1.45}
+    #pixel-ai-create .preview{white-space:pre-wrap;word-break:break-word;max-height:34vh;overflow:auto;margin:0;background:#100f1d;border:1px solid rgba(168,85,247,.22);border-radius:7px;color:#d8b4fe;padding:14px;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    @keyframes pixelAiCreatePulse{0%,100%{box-shadow:0 0 14px rgba(168,85,247,.32)}50%{box-shadow:0 0 24px rgba(168,85,247,.55)}}
+    @media (max-width:640px){#pixel-ai-create .card{padding:18px}#pixel-ai-create .actions{gap:8px}#pixel-ai-create button{flex:1 1 auto;min-width:0}}
   `;
   document.head.appendChild(style);
-  const launch = document.createElement('button'); launch.id='pixel-ai-create-launch'; launch.type='button'; launch.innerHTML='<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i><span>AI Create</span>';
-  const modal = document.createElement('div'); modal.id='pixel-ai-create'; modal.innerHTML=`<section class="card" role="dialog" aria-modal="true" aria-labelledby="pixel-ai-title"><div class="pixel-ai-modal-header"><div><div class="pixel-ai-kicker"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Pixel AI</div><h2 id="pixel-ai-title">AI Create</h2></div><button type="button" class="pixel-ai-close" data-ai-close aria-label="Close AI Create">&times;</button></div><div class="pixel-ai-body"><p class="pixel-ai-intro">Describe what you want to make in ${spec[0]}. The generated result is previewed before it changes the editor.</p><label class="pixel-ai-label" for="pixel-ai-prompt">Prompt</label><textarea id="pixel-ai-prompt" placeholder="Describe what you want to create…"></textarea><div class="pixel-ai-actions"><button type="button" class="pixel-ai-btn primary generate"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Generate preview</button><button type="button" class="pixel-ai-btn apply" disabled><i class="fas fa-check" aria-hidden="true"></i> Apply to editor</button><button type="button" class="pixel-ai-btn ghost close" data-ai-close>Close</button></div><p class="pixel-ai-status status" role="status"></p><div class="pixel-ai-preview-head"><span>Preview</span><span class="pixel-ai-preview-hint">JSON</span></div><pre class="preview">Your preview will appear here.</pre></div></section>`;
+  const launch = document.createElement('button'); launch.id='pixel-ai-create-launch'; launch.type='button'; launch.textContent='✦ AI Create';
+  const modal = document.createElement('div'); modal.id='pixel-ai-create'; modal.innerHTML=`<section class="card" role="dialog" aria-modal="true" aria-labelledby="pixel-ai-title"><h2 id="pixel-ai-title"><i class="fas fa-wand-magic-sparkles"></i> AI Create</h2><p>Describe what you want to make in ${spec[0]}. The generated result is previewed before it changes the editor.</p><textarea id="pixel-ai-prompt" placeholder="Describe what you want to create…"></textarea><div class="actions"><button type="button" class="generate"><i class="fas fa-play"></i> Generate preview</button><button type="button" class="apply" disabled><i class="fas fa-check"></i> Apply to editor</button><button type="button" class="close"><i class="fas fa-times"></i> Close</button></div><p class="status" role="status"></p><pre class="preview">Your preview will appear here.</pre></section>`;
   document.body.append(launch,modal);
   const status=modal.querySelector('.status'), preview=modal.querySelector('.preview'), apply=modal.querySelector('.apply');
   let result=null;
   launch.onclick=()=>modal.classList.add('open');
-  modal.querySelectorAll('[data-ai-close]').forEach(button=>button.onclick=()=>modal.classList.remove('open'));
+  modal.querySelector('.close').onclick=()=>modal.classList.remove('open');
   modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
   modal.querySelector('.generate').onclick=async()=>{
     try{

@@ -76,6 +76,7 @@ const App = {
         // Initialize UI and Input handlers
         UIManager.init();
         RightPanelManager.init();
+        if (typeof TileLibrary !== 'undefined') TileLibrary.init();
         InputHandler.init();
 
         // Initialize tutorial system

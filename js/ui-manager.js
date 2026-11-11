@@ -410,7 +410,7 @@ const UIManager = {
      */
     setActiveSidebarButton(activeId) {
         // Only deactivate sidebar buttons (layers, canvas, settings, tilemap), not drawing tools
-        const sidebarButtons = ['layersBtn', 'canvasBtn', 'settingsBtn', 'tilemapBtn'];
+        const sidebarButtons = ['layersBtn', 'canvasBtn', 'settingsBtn', 'tilemapBtn', 'tilesBtn'];
         sidebarButtons.forEach(buttonId => {
             const btn = document.getElementById(buttonId);
             if (btn) btn.classList.remove('active');

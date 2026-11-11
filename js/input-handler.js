@@ -499,10 +499,10 @@ const InputHandler = {
 
         if (DOM.elements.addNewBtn && typeof dualGridManager !== 'undefined') {
             DOM.elements.addNewBtn.addEventListener('click', () => {
-                dualGridManager.addNewFrames();
-                if (typeof Notifications !== 'undefined') {
-                    const notifications = new Notifications();
-                    notifications.success('Created new tile instance');
+                if (typeof TileLibrary !== 'undefined' && TileLibrary.createNewTile) {
+                    TileLibrary.createNewTile();
+                } else {
+                    dualGridManager.addNewFrames();
                 }
             });
         }

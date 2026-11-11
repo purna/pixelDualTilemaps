@@ -2012,3 +2012,289 @@ input[type="range"]::-moz-range-thumb {
 }
 
 
+
+/* --------------------------------------------------------------------------
+   Saved tile library
+   -------------------------------------------------------------------------- */
+#unified-settings-modal .modal {
+    width: min(860px, 95vw);
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+}
+
+#unified-settings-modal .modal header {
+    padding: 22px 26px 0;
+    margin-bottom: 0;
+}
+
+#unified-settings-modal .modal footer {
+    margin-top: 0;
+    padding: 16px 26px 20px;
+}
+
+#unified-settings-modal .modal-content-wrapper {
+    padding: 18px 26px 20px;
+    overflow-y: auto;
+}
+
+#unified-settings-modal .settings-tabs {
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+#unified-settings-modal .settings-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+#unified-settings-modal .settings-tab {
+    white-space: nowrap;
+    justify-content: center;
+}
+
+#unified-settings-modal .settings-content,
+#unified-settings-modal .scene-settings-content,
+#unified-settings-modal .export-settings-content,
+#unified-settings-modal .tiles-settings-content {
+    max-height: none;
+}
+
+.tiles-settings-content {
+    background: var(--bg-medium);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tile-library-intro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.tile-library-intro h3 {
+    margin: 0 0 5px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.tile-library-intro p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    max-width: 430px;
+}
+
+.tile-library-browser-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tile-library-new-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+}
+
+.tile-library-new-row input {
+    flex: 1 1 200px;
+    min-width: 160px;
+    padding: 9px 11px;
+    background: var(--bg-medium);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.tile-library-new-row input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(0, 255, 65, 0.14);
+}
+
+.tile-library-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+    gap: 10px;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.tile-card {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    grid-template-areas: "preview info" "actions actions";
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tile-card:hover {
+    border-color: var(--text-secondary);
+}
+
+.tile-card.current {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.22) inset;
+}
+
+.tile-card-preview {
+    grid-area: preview;
+    width: 58px;
+    height: 58px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-image:
+        linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,.08) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,.08) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.08) 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--text-secondary);
+}
+
+.tile-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.tile-card-info {
+    grid-area: info;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.tile-card-info strong {
+    color: var(--text-primary);
+    font-size: 0.83rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tile-card-info span {
+    color: var(--text-secondary);
+    font-size: 0.69rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tile-card-actions {
+    grid-area: actions;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.btn.compact {
+    padding: 5px 9px;
+    font-size: 0.7rem;
+    border-radius: 5px;
+    margin: 0;
+}
+
+.btn.compact.icon-only {
+    width: 28px;
+    padding: 5px 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn.danger,
+.btn.compact.danger {
+    color: var(--accent-secondary);
+    border-color: rgba(255, 0, 110, 0.35);
+}
+
+.btn.danger:hover,
+.btn.compact.danger:hover {
+    background: rgba(255, 0, 110, 0.12);
+}
+
+.tile-library-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 34px 18px;
+    text-align: center;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+}
+
+.tile-library-empty i {
+    font-size: 1.7rem;
+    color: var(--accent-tertiary);
+    opacity: 0.8;
+}
+
+.tile-library-empty p {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.84rem;
+}
+
+.tile-library-empty span {
+    font-size: 0.74rem;
+    max-width: 330px;
+    line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+    #unified-settings-modal .modal header {
+        padding: 18px 16px 0;
+    }
+
+    #unified-settings-modal .modal-content-wrapper {
+        padding: 14px 16px 16px;
+    }
+
+    #unified-settings-modal .modal footer {
+        padding: 14px 16px 18px;
+    }
+
+    .tile-library-list {
+        grid-template-columns: 1fr;
+    }
+
+    .tile-library-new-row .btn {
+        flex: 1 1 auto;
+    }
+}

@@ -86,7 +86,7 @@
                 <i class="fas fa-file-export"></i> Export
             </button>
             <button id="addNewBtn" class="btn"
-                data-tooltip="**Add New**\n--Create new tile instance--\n\nCreate a new instance of the current tile application">
+                data-tooltip="**Add New**\n--Create a blank tile--\n\nCreate a blank tile in the next available editor slot. Name and save it from the Tiles library.">
                 <i class="fas fa-plus-square"></i> Add New
             </button>
         </div>
@@ -139,6 +139,11 @@
                 data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\n• View 3x3 tile grid\n• Select active tiles\n• Edit seamless patterns\n\nCreate repeating tile patterns">
                 <i class="fas fa-th"></i>
                 <span>Tilemap</span>
+            </button>
+            <button class="tool-btn" id="tilesBtn" title="Saved Tiles (T)"
+                data-tooltip="**Saved Tiles**\n--Your tile library--\n\n• Save the current tile\n• Reopen a tile to edit\n• Delete tiles you no longer need\n\nTiles are stored in your browser">
+                <i class="fas fa-table-cells-large"></i>
+                <span>Tiles</span>
             </button>
         </aside>
 
@@ -448,6 +453,9 @@
                     <button class="settings-tab" data-tab="scene" id="tab-scene">
                         <i class="fas fa-image"></i> Tilemaps
                     </button>
+                    <button class="settings-tab" data-tab="tiles" id="tab-tiles">
+                        <i class="fas fa-table-cells-large"></i> Tiles
+                    </button>
                     <button class="settings-tab" data-tab="export" id="tab-export">
                         <i class="fas fa-download"></i> Export
                     </button>
@@ -599,6 +607,42 @@
                 </div>
                 </div>
 
+                <!-- Saved Tiles Tab -->
+                <div class="settings-tab-content" data-tab-content="tiles">
+                    <div class="tiles-settings-content">
+                        <div class="tile-library-intro">
+                            <div>
+                                <h3>Your Tile Library</h3>
+                                <p>Save several tiles in this browser, then reopen any of them for editing.</p>
+                            </div>
+                            <div class="tile-library-browser-actions">
+                                <button type="button" class="btn" id="save-working-copy-btn"
+                                    title="Save the current tile to browser storage">
+                                    <i class="fas fa-save"></i> Save to Browser
+                                </button>
+                                <button type="button" class="btn secondary" id="restore-working-copy-btn"
+                                    title="Restore the tile last saved to browser storage">
+                                    <i class="fas fa-rotate-left"></i> Restore
+                                </button>
+                            </div>
+                        </div>
+                        <div class="tile-library-new-row">
+                            <input type="text" id="tile-name-input" maxlength="60" placeholder="Tile name"
+                                aria-label="Tile name" value="Untitled Tile">
+                            <button type="button" class="btn primary" id="save-new-tile-btn">
+                                <i class="fas fa-plus"></i> Save Current as New Tile
+                            </button>
+                            <button type="button" class="btn" id="new-blank-tile-btn"
+                                title="Start a new blank tile">
+                                <i class="fas fa-file"></i> New Blank Tile
+                            </button>
+                        </div>
+                        <div id="tile-library-list" class="tile-library-list" aria-live="polite">
+                            <!-- Saved tiles are rendered here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Export Settings Tab -->
                 <div class="settings-tab-content" data-tab-content="export">
                     <div class="export-settings-content">
@@ -651,10 +695,10 @@
                                     <i class="fas fa-cloud-download-alt"></i> Export Defaults
                                 </button>
                                 <button id="saveToBrowserBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
-                                    <i class="fas fa-save"></i> Save to Browser
+                                    <i class="fas fa-save"></i> Save Settings to Browser
                                 </button>
                                 <button id="loadFromBrowserBtn" class="btn secondary" style="width: 100%;">
-                                    <i class="fas fa-download"></i> Load from Browser
+                                    <i class="fas fa-download"></i> Load Settings from Browser
                                 </button>
                             </div>
                         </div>
@@ -737,6 +781,7 @@
     <script src="js/tilemap-manager.js"></script>
     <script src="js/tile-state-manager.js"></script>
     <script src="js/dual-grid-manager.js"></script>
+    <script src="js/tile-library.js"></script>
     <script src="js/settings-manager.js"></script>
     <script src="js/zoom-manager.js"></script>
     <script src="js/tutorialConfig.js"></script>

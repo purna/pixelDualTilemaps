@@ -702,6 +702,24 @@ loadWatermarkImage(imageName) {
         }
     }
 
+    updateDualGridUI() {
+        if (!this.dualGridData || !Array.isArray(this.dualGridData.tiles)) return;
+
+        this.dualGridData.tiles.forEach(tileData => {
+            const tileElement = this.tiles.find(tile =>
+                parseInt(tile.dataset.index, 10) === tileData.index
+            );
+            if (!tileElement) return;
+
+            if (tileData.frame && tileData.frame.canvasImage) {
+                this.updateFrameDisplay(tileData);
+            } else {
+                const canvas = tileElement.querySelector('canvas');
+                if (canvas) this.drawTileContent(canvas, tileData.index);
+            }
+        });
+    }
+
     drawTileContent(canvas, tileIndex) {
         const ctx = canvas.getContext('2d');
         const tileData = this.dualGridData.tiles[tileIndex];

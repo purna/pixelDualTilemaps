@@ -5,6 +5,7 @@ const UIManager = {
     init() {
         console.log('Initializing UI Manager...');
         this.setupPanelToggle();
+        this.setupUIToggle();
         this.setupContextSwitching();
         this.setupBrushControlsDrag();
         this.setupSettingsTabs();
@@ -51,6 +52,35 @@ const UIManager = {
             // Save state
             this.savePanelState(!panel.classList.contains('closed'));
         });
+    },
+
+    setupUIToggle() {
+        const uiBtn = document.getElementById('uiBtn');
+        if (!uiBtn) return;
+
+        uiBtn.addEventListener('click', () => {
+            this.toggleFloatingUIElements();
+        });
+    },
+
+    toggleFloatingUIElements() {
+        const colorHistory = document.querySelector('.floating-color-history');
+        const brushControls = document.querySelector('.brush-controls-overlay');
+        const uiBtn = document.getElementById('uiBtn');
+
+        if (!colorHistory || !uiBtn) return;
+
+        const isVisible = !colorHistory.classList.contains('hidden');
+        [colorHistory, brushControls].forEach(element => {
+            if (element) element.classList.toggle('hidden', isVisible);
+        });
+        uiBtn.classList.toggle('ui-hidden', isVisible);
+        uiBtn.title = isVisible ? 'Show UI Elements' : 'Hide UI Elements';
+
+        const icon = uiBtn.querySelector('i');
+        if (icon) {
+            icon.className = isVisible ? 'fas fa-eye-slash' : 'fas fa-eye';
+        }
     },
 
     setupContextSwitching() {

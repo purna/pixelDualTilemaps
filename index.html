@@ -55,6 +55,12 @@
 
             <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
 
+            <button id="uiBtn" class="btn icon-only" title="Hide UI Elements">
+                <i class="fas fa-eye"></i>
+            </button>
+
+            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
+
             <div class="zoom-controls-header">
                 <button id="zoomOutBtn" class="btn icon-only" title="Zoom Out (Ctrl/-)"><i
                         class="fas fa-minus"></i></button>
@@ -189,7 +195,8 @@
             </div>
 
             <!-- Floating Color History Overlay -->
-            <div class="floating-color-history">
+            <div class="floating-color-history" aria-label="Recent colors">
+                <span class="grippy"></span>
                 <div class="color-history-swatches">
                     <div class="color-swatch" data-color-index="0" title="Recent Color 1 (Press 1)"></div>
                     <div class="color-swatch" data-color-index="1" title="Recent Color 2 (Press 2)"></div>

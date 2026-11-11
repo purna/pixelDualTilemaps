@@ -25,7 +25,7 @@ const State = {
         '#ffa500', '#800080', '#ffc0cb', '#a52a2a',
         '#808080', '#c0c0c0', '#90ee90', '#ff6347'
     ],
-    recentColors: [],
+    recentColors: ['#000000', '#ffffff', '#3b82f6', '#ef4444', '#10b981'],
     
     // File state
     hasUnsavedChanges: false,

@@ -58,7 +58,7 @@ const FloatingPanelManager = {
     },
 
     addGrippyHandle(historyOverlay) {
-        if (historyOverlay) {
+        if (historyOverlay && !historyOverlay.querySelector('.grippy')) {
             const grippy = document.createElement('span');
             grippy.className = 'grippy';
             historyOverlay.insertBefore(grippy, historyOverlay.firstChild);
@@ -68,7 +68,7 @@ const FloatingPanelManager = {
     addGrippyHandleToBrushControls(brushControlsOverlay) {
         if (brushControlsOverlay) {
             const brushControls = brushControlsOverlay.querySelector('.brush-controls');
-            if (brushControls) {
+            if (brushControls && !brushControls.querySelector('.grippy')) {
                 const grippy = document.createElement('span');
                 grippy.className = 'grippy';
                 brushControls.insertBefore(grippy, brushControls.firstChild);

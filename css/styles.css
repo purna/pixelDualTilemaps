@@ -711,6 +711,11 @@ canvas {
     gap: 4px;
     cursor: move;
     user-select: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-color-history:hover {
+    box-shadow: 0 4px 18px rgba(0, 255, 65, 0.18);
 }
 
 .floating-color-history .grippy {
@@ -749,12 +754,33 @@ canvas {
 
 .color-swatch:hover {
     transform: scale(1.1);
-    border-color: var(--accent-color);
+    border-color: var(--accent-primary);
 }
 
 .color-swatch.active {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.5);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 8px var(--border-glow);
+}
+
+.floating-color-history.hidden,
+.brush-controls-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-50%) translateX(-20px);
+    pointer-events: none;
+}
+
+.brush-controls-overlay.hidden {
+    transform: translateX(-50%) translateY(20px);
+}
+
+#uiBtn.ui-hidden {
+    background: rgba(255, 0, 110, 0.2);
+    border: 1px solid var(--accent-secondary);
+}
+
+#uiBtn.ui-hidden:hover {
+    background: rgba(255, 0, 110, 0.3);
 }
 
 /* Color history label */

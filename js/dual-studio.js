@@ -56,6 +56,7 @@
         sprayDensity: 0.5,
         sprayVariation: 0.5,
         sprayUsePalette: false,
+        sprayErase: false,
         sprayTimer: null,
         sprayPoint: null,
         neighbourChoices: {},
@@ -131,7 +132,7 @@
                 'dsCenterScroll', 'dsCenterSplitter', 'dsCenterTabs', 'dsEditorFocusBtn',
                 'dsPreviewExpandBtn', 'dsPreviewExportTilesetBtn', 'dsPreviewExportRulesBtn',
                 'dsSprayOptions', 'dsSprayDensity', 'dsSprayDensityLabel', 'dsSprayVariation',
-                'dsSprayVariationLabel', 'dsSprayPalette', 'dsApp',
+                'dsSprayVariationLabel', 'dsSprayPalette', 'dsSprayErase', 'dsSprayEraseWrap', 'dsApp',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
                 'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
@@ -265,6 +266,11 @@
             });
             els.dsSprayPalette.addEventListener('change', (e) => {
                 this.sprayUsePalette = e.target.checked;
+            });
+            els.dsSprayErase.addEventListener('change', (e) => {
+                this.sprayErase = e.target.checked;
+                if (!this.isSprayActive()) this.stopSpray();
+                this.updateSprayOptionsVisibility();
             });
             els.dsWrap.addEventListener('change', (e) => this.wrap = e.target.checked);
             els.dsSyncEdges.addEventListener('change', (e) => {
@@ -449,6 +455,13 @@
             els.dsExportVariations.addEventListener('change', () => this.renderExportHint());
 
             // Modals
+            document.querySelectorAll('[data-open-modal]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.closeAllModals();
+                    this.openModal(button.dataset.openModal);
+                });
+            });
             document.querySelectorAll('[data-close-modal]').forEach(button => {
                 button.addEventListener('click', () => this.closeModal(button.dataset.closeModal));
             });
@@ -903,13 +916,27 @@
 
         setTool(tool) {
             this.tool = tool;
-            if (tool !== 'spray') this.stopSpray();
+            if (!this.isSprayActive()) this.stopSpray();
             this.els.dsToolGrid.querySelectorAll('.ds-tool').forEach(button => {
                 button.classList.toggle('active', button.dataset.tool === tool);
             });
             this.els.dsEditorCanvas.style.cursor = tool === 'picker' ? 'copy' : 'crosshair';
+            this.updateSprayOptionsVisibility();
+        },
+
+        isSprayActive() {
+            return this.tool === 'spray' || (this.tool === 'eraser' && this.sprayErase);
+        },
+
+        updateSprayOptionsVisibility() {
+            const eraser = this.tool === 'eraser';
+            const showOptions = this.tool === 'spray' || (eraser && this.sprayErase);
+            if (this.els.dsSprayEraseWrap) {
+                this.els.dsSprayEraseWrap.classList.toggle('hidden', !eraser);
+            }
             if (this.els.dsSprayOptions) {
-                this.els.dsSprayOptions.classList.toggle('hidden', tool !== 'spray');
+                this.els.dsSprayOptions.classList.toggle('hidden', !showOptions);
+                this.els.dsSprayOptions.classList.toggle('is-erasing', eraser);
             }
         },
 
@@ -1023,7 +1050,7 @@
             const changed = new Set();
             this.paintAt(point, erase, changed);
             this.afterMasksChanged(changed);
-            if (this.tool === 'spray') {
+            if (this.isSprayActive()) {
                 this.sprayPoint = point;
                 this.startSpray();
             }
@@ -1044,7 +1071,7 @@
             const changed = new Set();
             this.strokeLine(this.lastPoint, point, this.strokeErase, changed);
             this.lastPoint = point;
-            if (this.tool === 'spray') this.sprayPoint = point;
+            if (this.isSprayActive()) this.sprayPoint = point;
             this.afterMasksChanged(changed);
         },
 
@@ -1084,7 +1111,7 @@
         startSpray() {
             if (this.sprayTimer) return;
             this.sprayTimer = setInterval(() => {
-                if (!this.drawing || this.tool !== 'spray' || !this.sprayPoint) return;
+                if (!this.drawing || !this.isSprayActive() || !this.sprayPoint) return;
                 const changed = new Set();
                 this.paintAt(this.sprayPoint, this.strokeErase, changed);
                 if (changed.size) this.afterMasksChanged(changed);
@@ -1143,7 +1170,7 @@
                 this.trackTouchedEdge(mask, px, py, size);
             };
 
-            if (this.tool === 'spray') {
+            if (this.isSprayActive()) {
                 const radius = Math.min(16, Math.max(1, Math.round(brush * 0.7)));
                 const density = Core.clamp(this.sprayDensity, 0.01, 1);
                 const variation = Core.clamp(this.sprayVariation, 0, 1);

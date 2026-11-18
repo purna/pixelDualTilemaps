@@ -55,12 +55,14 @@ outer-edge terrains.
 - **Pixel tools** — pencil, brush, eraser, spray can, flood fill and eyedropper, with
   brush size, opacity, edge-wrap drawing, mirror X/Y and a pixel-grid overlay. The
   spray can keeps spraying while held, supports density and opacity-variation controls,
-  and can dither through the current palette.
+  and can dither through the current palette. Right-click with Spray to dither-erase, or
+  enable **Spray erase** on the Eraser for a reverse spray can.
 - **Seam sync** — with **Sync edges** on, drawing an edge copies it into every compatible
   neighbouring mask and every variation, so the atlas stays seamless automatically.
 - **Undo / redo** for tile edits, sync changes and layer operations, including the
   variation that was edited.
-- **Palette + recent colours**, persisted in browser storage.
+- **Palette + recent colours**, persisted in browser storage. Import a palette from a
+  Coolors URL or a list of hex colours using the import button in the Color panel.
 - **Project save / open** — a single `.dual-grid.json` file contains every grid,
   variation, tile, layer and test map.
 - **Autosave** to local storage.
@@ -163,8 +165,9 @@ from:
 
 **[Hand-drawn Dual Grid Tileset by Kaffe Medbulla](https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset)**
 
-Credit is also shown in the app footer, the Help dialog, the Credit panel and the
-exported project JSON.
+Credit is also available from the footer, the Help dialog and the Credit panel. Each opens
+an in-app Credits modal listing every sample tileset and the tech stack used. Exported
+project JSON carries the same reference.
 
 ## Browser support
 

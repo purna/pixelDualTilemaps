@@ -40,8 +40,7 @@ the fill tile) is also supported for simpler outer-edge terrains.
 - **Multiple grids per design** — add, duplicate, rename and delete grids. Each grid has
   its own tile atlas and test map. Roles (`outer`, `custom`, `inner`) control the preview
   order so an outer terrain can sit beneath an inner overlay.
-- **Layers per tile** — add, duplicate, hide, rename, reorder and set opacity on tile
-  layers.
+- **Layers per tile** — add, duplicate, hide, rename and set opacity on tile layers.
 - **Pixel tools** — pencil, brush, eraser, flood fill and eyedropper, with brush size,
   opacity, edge-wrap drawing, mirror X/Y and a pixel-grid overlay.
 - **Seam sync** — with **Sync edges** on, drawing an edge copies it into every compatible
@@ -49,8 +48,8 @@ the fill tile) is also supported for simpler outer-edge terrains.
 - **Undo / redo** for tile edits, sync changes and layer operations, including the
   variation that was edited.
 - **Palette + recent colours**, persisted in browser storage.
-- **Project save / open** — a single `.dual-grid.json` file contains every grid, tile,
-  layer and test map.
+- **Project save / open** — a single `.dual-grid.json` file contains every grid,
+  variation, tile, layer and test map.
 - **Autosave** to local storage.
 - **PNG export** — active grid, all grids, or a combined sheet, with configurable
   scale, gap, margin, background, and active-only or all-variation export. Also exports
@@ -66,7 +65,7 @@ the fill tile) is also supported for simpler outer-edge terrains.
    ```
    Then visit `http://localhost:8080`.
 2. The sample design loads automatically. Click a tile in the atlas and draw in the
-   large editor. The half-tile margin repeats the neighbouring copy at 50% opacity.
+   large editor. The half-tile margin shows the neighbouring copy at 50% opacity.
 3. Draw across a seam. With **Sync edges** on, compatible neighbour masks and all their
    variations receive the same edge pixels.
 4. Watch the **Live Preview** in the right sidebar and the larger **Neighbour Preview**

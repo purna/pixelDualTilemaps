@@ -260,14 +260,14 @@ window.DualCore = (function () {
     }
 
     function getActiveVariationIndex(grid, mask) {
-        if (!grid || mask === 0) return 0;
+        if (!grid) return 0;
         const list = getVariations(grid, mask);
         const raw = Array.isArray(grid.activeVariation) ? grid.activeVariation[mask] : 0;
         return clamp(Number(raw) || 0, 0, list.length - 1);
     }
 
     function setActiveVariation(grid, mask, index) {
-        if (!grid || mask === 0) return 0;
+        if (!grid) return 0;
         const list = getVariations(grid, mask);
         const next = clamp(Number(index) || 0, 0, list.length - 1);
         if (!Array.isArray(grid.activeVariation)) grid.activeVariation = new Array(16).fill(0);
@@ -278,7 +278,7 @@ window.DualCore = (function () {
     }
 
     function addVariation(grid, mask, copyCurrent) {
-        if (!grid || mask === 0) return null;
+        if (!grid) return null;
         const size = tileSizeOf(grid);
         const list = getVariations(grid, mask);
         const source = list[getActiveVariationIndex(grid, mask)] || grid.tiles[mask];
@@ -289,7 +289,7 @@ window.DualCore = (function () {
     }
 
     function deleteVariation(grid, mask, index) {
-        if (!grid || mask === 0) return false;
+        if (!grid) return false;
         const list = getVariations(grid, mask);
         if (list.length <= 1) return false;
         const target = clamp(Number(index) || 0, 0, list.length - 1);
@@ -299,7 +299,7 @@ window.DualCore = (function () {
     }
 
     function getVariationCanvas(grid, mask, index) {
-        if (!grid || mask === 0) return null;
+        if (!grid) return null;
         if (!grid.cache) grid.cache = new Map();
         const list = getVariations(grid, mask);
         const variation = clamp(Number(index) || 0, 0, list.length - 1);
@@ -311,7 +311,7 @@ window.DualCore = (function () {
     }
 
     function getTileCanvas(grid, mask) {
-        if (!grid || mask === 0) return null;
+        if (!grid) return null;
         if (!grid.cache) grid.cache = new Map();
         if (grid.cache.has(mask)) return grid.cache.get(mask);
 

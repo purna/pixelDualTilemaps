@@ -1455,7 +1455,8 @@
             const tile = this.activeTile();
             if (!tile) return;
             this.beginHistory(this.selectedMask);
-            const layer = Core.createLayer(this.tileSize(), `Layer ${tile.layers.length + 1}`);
+            const userLayerCount = tile.layers.filter(item => !(item.system || item.name === 'Edge sync')).length;
+            const layer = Core.createLayer(this.tileSize(), `Layer ${userLayerCount + 1}`);
             tile.layers.push(layer);
             tile.activeLayer = tile.layers.length - 1;
             this.commitHistory();

@@ -27,6 +27,8 @@
         opacity: 1,
         wrap: true,
         syncEdges: true,
+        editorZoom: 1,
+        showCenterBorder: true,
         strokeTouched: new Map(),
         mirrorX: false,
         mirrorY: false,
@@ -74,6 +76,8 @@
             this.selectedMask = this.project.selectedMask || 15;
             this.ensureSelectedMask();
             this.renderAll();
+            this.setEditorZoom(this.editorZoom);
+            this.updateCenterOutline();
             this.updateHistoryButtons();
             this.updateFooter();
             if (!loaded) {
@@ -88,17 +92,20 @@
                 'dsProjectName', 'dsSaveState', 'dsUndoBtn', 'dsRedoBtn', 'dsNewBtn', 'dsOpenBtn',
                 'dsSaveBtn', 'dsExportBtn', 'dsHelpBtn', 'dsToolGrid', 'dsBrushSize',
                 'dsBrushSizeLabel', 'dsBrushPresets', 'dsOpacity', 'dsOpacityLabel', 'dsWrap',
-                'dsMirrorX', 'dsMirrorY', 'dsShowPixelGrid', 'dsSyncEdges', 'dsColorPicker', 'dsColorHex',
+                'dsMirrorX', 'dsMirrorY', 'dsShowPixelGrid', 'dsCenterBorder', 'dsSyncEdges', 'dsColorPicker', 'dsColorHex',
+                'dsZoomInBtn', 'dsZoomOutBtn', 'dsZoomFitBtn', 'dsZoomLabel',
+                'dsVariationCount', 'dsVariationChips', 'dsAddVariationBtn', 'dsDeleteVariationBtn',
                 'dsSaveColorBtn', 'dsPalette', 'dsRecentColors', 'dsAddLayerBtn', 'dsDuplicateLayerBtn',
                 'dsDeleteLayerBtn', 'dsLayerOpacityWrap', 'dsLayerOpacity', 'dsLayerOpacityLabel', 'dsLayers',
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
+                'dsCanvasWrap', 'dsCenterOutline',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
                 'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
                 'dsAtlasList', 'dsAtlasListCount',
                 'dsRandomMapBtn', 'dsClearMapBtn', 'dsFillMapBtn', 'dsShowAllGrids', 'dsGridList',
                 'dsAddGridBtn', 'dsGridName', 'dsGridRole', 'dsGridMode', 'dsTileSize',
-                'dsDuplicateGridBtn', 'dsDeleteGridBtn', 'dsExportLayout', 'dsExportScale',
+                'dsDuplicateGridBtn', 'dsDeleteGridBtn', 'dsExportLayout', 'dsExportVariations', 'dsExportScale',
                 'dsExportGap', 'dsExportMargin', 'dsExportBg', 'dsExportTransparent',
                 'dsExportActiveBtn', 'dsExportAllBtn', 'dsExportSheetBtn', 'dsExportJsonBtn',
                 'dsExportHint', 'dsFooterStatus', 'dsNewModal', 'dsNewName', 'dsNewStarter',
@@ -167,6 +174,26 @@
                 this.showPixelGrid = e.target.checked;
                 this.renderEditor();
             });
+            els.dsCenterBorder.addEventListener('change', (e) => {
+                this.showCenterBorder = e.target.checked;
+                this.updateCenterOutline();
+                this.renderEditor();
+            });
+            els.dsZoomInBtn.addEventListener('click', () => this.setEditorZoom(this.editorZoom * 1.5));
+            els.dsZoomOutBtn.addEventListener('click', () => this.setEditorZoom(this.editorZoom / 1.5));
+            els.dsZoomFitBtn.addEventListener('click', () => this.setEditorZoom(1));
+            els.dsVariationChips.addEventListener('click', (e) => {
+                const chip = e.target.closest('.ds-variation-chip');
+                if (!chip) return;
+                this.selectVariation(parseInt(chip.dataset.index, 10));
+            });
+            els.dsAddVariationBtn.addEventListener('click', () => this.addVariation());
+            els.dsDeleteVariationBtn.addEventListener('click', () => this.deleteVariation());
+            this.els.dsEditorStage.addEventListener('wheel', (e) => {
+                if (!(e.ctrlKey || e.metaKey)) return;
+                e.preventDefault();
+                this.setEditorZoom(this.editorZoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2));
+            }, { passive: false });
 
             // Colour
             els.dsColorPicker.addEventListener('input', (e) => this.setColor(e.target.value, true));
@@ -284,6 +311,8 @@
                 this.ensureSelectedMask();
                 this.renderAtlas();
                 this.renderEditor();
+                this.renderVariations();
+                this.renderLayers();
                 this.renderGridList();
                 this.renderPreview();
                 this.renderExportHint();
@@ -298,6 +327,7 @@
             els.dsExportSheetBtn.addEventListener('click', () => this.exportCombinedSheet());
             els.dsExportJsonBtn.addEventListener('click', () => this.exportProjectJson());
             els.dsExportLayout.addEventListener('change', () => this.renderExportHint());
+            els.dsExportVariations.addEventListener('change', () => this.renderExportHint());
 
             // Modals
             document.querySelectorAll('[data-close-modal]').forEach(button => {
@@ -488,6 +518,30 @@
            Tools / brush
            -------------------------------------------------------- */
 
+        updateCenterOutline() {
+            if (!this.els.dsCenterOutline) return;
+            this.els.dsCenterOutline.style.display = this.showCenterBorder ? 'block' : 'none';
+        },
+
+        setEditorZoom(value) {
+            this.editorZoom = Core.clamp(Number(value) || 1, 1, 8);
+            const percent = Math.round(this.editorZoom * 100);
+            const target = this.els.dsCanvasWrap || this.els.dsEditorCanvas;
+            if (target) {
+                target.style.width = `${percent}%`;
+                target.style.height = `${percent}%`;
+            }
+            if (this.els.dsZoomLabel) this.els.dsZoomLabel.textContent = `${percent}%`;
+
+            const stage = this.els.dsEditorStage;
+            if (stage) {
+                requestAnimationFrame(() => {
+                    stage.scrollLeft = (stage.scrollWidth - stage.clientWidth) / 2;
+                    stage.scrollTop = (stage.scrollHeight - stage.clientHeight) / 2;
+                });
+            }
+        },
+
         setTool(tool) {
             this.tool = tool;
             this.els.dsToolGrid.querySelectorAll('.ds-tool').forEach(button => {
@@ -511,15 +565,21 @@
 
         pointFromGlobal(gx, gy) {
             const size = this.tileSize();
-            const x = ((gx % size) + size) % size;
-            const y = ((gy % size) + size) % size;
+            const half = Math.floor(size / 2);
+            const internal = size * 2;
+            if (gx < 0 || gy < 0 || gx >= internal || gy >= internal) return null;
+
+            const mapAxis = (value) => {
+                if (value < half) return value + half;
+                if (value >= half + size) return value - half - size;
+                return value - half;
+            };
+
             return {
-                x,
-                y,
+                x: mapAxis(gx),
+                y: mapAxis(gy),
                 gx,
                 gy,
-                cellCol: Math.floor(gx / size),
-                cellRow: Math.floor(gy / size),
                 mask: this.selectedMask
             };
         },
@@ -529,7 +589,7 @@
             const canvas = this.els.dsEditorCanvas;
             const rect = canvas.getBoundingClientRect();
             const size = this.tileSize();
-            const internal = size * 3;
+            const internal = size * 2;
             let gx = Math.floor((e.clientX - rect.left) / rect.width * internal);
             let gy = Math.floor((e.clientY - rect.top) / rect.height * internal);
             gx = Core.clamp(gx, 0, internal - 1);
@@ -771,12 +831,50 @@
         syncMaskEdges(grid, sourceMask, edges, corners) {
             if (!edges.size && !corners.size) return;
             const size = this.tileSize();
-            const source = grid.tiles[sourceMask];
+            const sourceVariation = Core.getActiveVariationIndex(grid, sourceMask);
+            const source = Core.getVariations(grid, sourceMask)[sourceVariation];
             if (!source) return;
 
-            const sourceComposite = Core.compositeTile(source, size);
-            const sourceData = sourceComposite.getContext('2d').getImageData(0, 0, size, size).data;
             const changed = new Set();
+
+            const getSyncLayer = (tile) => {
+                let layer = tile.layers.find(item => item.name === 'Edge sync');
+                if (!layer) {
+                    layer = Core.createLayer(size, 'Edge sync');
+                    layer.system = true;
+                    tile.layers.unshift(layer);
+                    tile.activeLayer = (tile.activeLayer || 0) + 1;
+                } else {
+                    const index = tile.layers.indexOf(layer);
+                    if (index > 0) {
+                        tile.layers.splice(index, 1);
+                        tile.layers.unshift(layer);
+                        if (tile.activeLayer === index) tile.activeLayer = 0;
+                        else if (tile.activeLayer < index) tile.activeLayer += 1;
+                    }
+                }
+                layer.system = true;
+                layer.visible = true;
+                layer.opacity = 1;
+                tile.activeLayer = Core.clamp(tile.activeLayer || 0, 0, tile.layers.length - 1);
+                return layer;
+            };
+
+            // The sync layer is a cache of the canonical edge. Composite the
+            // tile without it so a stroke on the active layer is what wins.
+            const sourceSync = source.layers.some(item => item.name === 'Edge sync')
+                ? getSyncLayer(source)
+                : null;
+            let sourceComposite;
+            if (sourceSync) {
+                const wasVisible = sourceSync.visible;
+                sourceSync.visible = false;
+                sourceComposite = Core.compositeTile(source, size);
+                sourceSync.visible = wasVisible;
+            } else {
+                sourceComposite = Core.compositeTile(source, size);
+            }
+            const sourceData = sourceComposite.getContext('2d').getImageData(0, 0, size, size).data;
 
             const candidatesForEdge = (mask, edge) => {
                 let required = 0;
@@ -802,23 +900,6 @@
                 return result;
             };
 
-            const getSyncLayer = (tile) => {
-                let layer = tile.layers.find(item => item.name === 'Edge sync');
-                if (!layer) {
-                    layer = Core.createLayer(size, 'Edge sync');
-                    tile.layers.push(layer);
-                }
-                layer.visible = true;
-                layer.opacity = 1;
-                const index = tile.layers.indexOf(layer);
-                if (index !== -1 && index !== tile.layers.length - 1) {
-                    tile.layers.splice(index, 1);
-                    tile.layers.push(layer);
-                    tile.activeLayer = Math.min(tile.activeLayer, tile.layers.length - 1);
-                }
-                return layer;
-            };
-
             const clearStrip = (tile, edge) => {
                 tile.layers.forEach(layer => {
                     const ctx = layer.canvas.getContext('2d');
@@ -829,10 +910,26 @@
                 });
             };
 
-            const copyEdge = (targetMask, edge) => {
-                const tile = grid.tiles[targetMask];
+            const clearSyncStrip = (edge) => {
+                if (!sourceSync) return;
+                const ctx = sourceSync.canvas.getContext('2d');
+                if (edge === 'left') ctx.clearRect(0, 0, 1, size);
+                else if (edge === 'right') ctx.clearRect(size - 1, 0, 1, size);
+                else if (edge === 'top') ctx.clearRect(0, 0, size, 1);
+                else if (edge === 'bottom') ctx.clearRect(0, size - 1, size, 1);
+            };
+
+            const clearSyncCorner = (x, y) => {
+                if (!sourceSync) return;
+                sourceSync.canvas.getContext('2d').clearRect(x, y, 1, 1);
+            };
+
+            const copyEdge = (targetMask, targetVariation, edge) => {
+                if (targetMask === sourceMask && targetVariation === sourceVariation) return;
+                const list = Core.getVariations(grid, targetMask);
+                const tile = list[targetVariation];
                 if (!tile) return;
-                this.rememberHistoryTile(targetMask);
+                this.rememberHistoryTile(targetMask, targetVariation);
                 // The source edge is copied to the opposite edge of the
                 // neighbouring variant, so clear that destination edge.
                 const destinationEdge = edge === 'left' ? 'right'
@@ -855,8 +952,41 @@
                 changed.add(targetMask);
             };
 
+            const copyEdgeToSameMaskVariation = (targetVariation, edge) => {
+                if (targetVariation === sourceVariation) return;
+                const list = Core.getVariations(grid, sourceMask);
+                const tile = list[targetVariation];
+                if (!tile) return;
+                this.rememberHistoryTile(sourceMask, targetVariation);
+                clearStrip(tile, edge);
+                const layer = getSyncLayer(tile);
+                const ctx = layer.canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                if (edge === 'right') {
+                    ctx.drawImage(sourceComposite, size - 1, 0, 1, size, size - 1, 0, 1, size);
+                } else if (edge === 'left') {
+                    ctx.drawImage(sourceComposite, 0, 0, 1, size, 0, 0, 1, size);
+                } else if (edge === 'top') {
+                    ctx.drawImage(sourceComposite, 0, 0, size, 1, 0, 0, size, 1);
+                } else if (edge === 'bottom') {
+                    ctx.drawImage(sourceComposite, 0, size - 1, size, 1, 0, size - 1, size, 1);
+                }
+                changed.add(sourceMask);
+            };
+
             edges.forEach(edge => {
-                candidatesForEdge(sourceMask, edge).forEach(mask => copyEdge(mask, edge));
+                // Drop the stale cached edge on the source tile. The active
+                // layers above it now hold the authoritative pixels.
+                clearSyncStrip(edge);
+                // Variations of the same tile share the same edge art.
+                Core.getVariations(grid, sourceMask).forEach((_, variation) => {
+                    copyEdgeToSameMaskVariation(variation, edge);
+                });
+                candidatesForEdge(sourceMask, edge).forEach(mask => {
+                    Core.getVariations(grid, mask).forEach((_, variation) => {
+                        copyEdge(mask, variation, edge);
+                    });
+                });
             });
 
             const cornerMap = {
@@ -875,24 +1005,40 @@
                     sourceData[(info.sy * size + info.sx) * 4 + 2],
                     sourceData[(info.sy * size + info.sx) * 4 + 3]
                 ];
-                if (sourcePixel[3] === 0) return;
+                // Drop the stale cached corner on the source tile.
+                clearSyncCorner(info.sx, info.sy);
+
+                // Same tile, different variations: copy the same corner.
+                Core.getVariations(grid, sourceMask).forEach((tile, variation) => {
+                    if (variation === sourceVariation || !tile) return;
+                    this.rememberHistoryTile(sourceMask, variation);
+                    tile.layers.forEach(layer => {
+                        layer.canvas.getContext('2d').clearRect(info.sx, info.sy, 1, 1);
+                    });
+                    const layer = getSyncLayer(tile);
+                    const ctx = layer.canvas.getContext('2d');
+                    ctx.fillStyle = `rgba(${sourcePixel[0]}, ${sourcePixel[1]}, ${sourcePixel[2]}, ${sourcePixel[3] / 255})`;
+                    ctx.fillRect(info.sx, info.sy, 1, 1);
+                    changed.add(sourceMask);
+                });
 
                 for (let candidate = 1; candidate <= 15; candidate++) {
                     if (candidate === sourceMask) continue;
                     if ((candidate & info.targetBit) !== (sourceMask & info.bit ? info.targetBit : 0)) continue;
-                    const tile = grid.tiles[candidate];
-                    if (!tile) continue;
-                    this.rememberHistoryTile(candidate);
+                    Core.getVariations(grid, candidate).forEach((tile, variation) => {
+                        if (!tile) return;
+                        this.rememberHistoryTile(candidate, variation);
 
-                    tile.layers.forEach(layer => {
-                        layer.canvas.getContext('2d').clearRect(info.tx, info.ty, 1, 1);
+                        tile.layers.forEach(layer => {
+                            layer.canvas.getContext('2d').clearRect(info.tx, info.ty, 1, 1);
+                        });
+
+                        const layer = getSyncLayer(tile);
+                        const ctx = layer.canvas.getContext('2d');
+                        ctx.fillStyle = `rgba(${sourcePixel[0]}, ${sourcePixel[1]}, ${sourcePixel[2]}, ${sourcePixel[3] / 255})`;
+                        ctx.fillRect(info.tx, info.ty, 1, 1);
+                        changed.add(candidate);
                     });
-
-                    const layer = getSyncLayer(tile);
-                    const ctx = layer.canvas.getContext('2d');
-                    ctx.fillStyle = `rgba(${sourcePixel[0]}, ${sourcePixel[1]}, ${sourcePixel[2]}, ${sourcePixel[3] / 255})`;
-                    ctx.fillRect(info.tx, info.ty, 1, 1);
-                    changed.add(candidate);
                 }
             });
 
@@ -1052,21 +1198,37 @@
             this.pendingHistory = {
                 gridId: grid.id,
                 firstMask: null,
+                firstVariation: 0,
+                firstVariationId: null,
                 before: new Map()
             };
             if (primaryMask != null) this.rememberHistoryTile(primaryMask);
         },
 
-        rememberHistoryTile(mask) {
+        rememberHistoryTile(mask, variation) {
             if (!this.pendingHistory) return;
             if (!mask) return;
-            if (this.pendingHistory.before.has(mask)) return;
             const grid = Core.getGrid(this.project, this.pendingHistory.gridId);
             if (!grid) return;
-            const tile = grid.tiles[mask];
+            const list = Core.getVariations(grid, mask);
+            const index = variation == null
+                ? Core.getActiveVariationIndex(grid, mask)
+                : Core.clamp(Number(variation) || 0, 0, list.length - 1);
+            const key = `${mask}:${index}`;
+            if (this.pendingHistory.before.has(key)) return;
+            const tile = list[index];
             if (!tile) return;
-            this.pendingHistory.before.set(mask, this.snapshotTile(tile));
-            if (this.pendingHistory.firstMask == null) this.pendingHistory.firstMask = mask;
+            this.pendingHistory.before.set(key, {
+                mask,
+                variation: index,
+                variationId: tile.id,
+                before: this.snapshotTile(tile)
+            });
+            if (this.pendingHistory.firstMask == null) {
+                this.pendingHistory.firstMask = mask;
+                this.pendingHistory.firstVariation = index;
+                this.pendingHistory.firstVariationId = tile.id;
+            }
         },
 
         commitHistory() {
@@ -1077,16 +1239,25 @@
             if (!grid) return;
 
             const changes = [];
-            entry.before.forEach((before, mask) => {
-                const tile = grid.tiles[mask];
+            entry.before.forEach(item => {
+                const list = Core.getVariations(grid, item.mask);
+                const tile = list[item.variation];
                 if (!tile) return;
-                changes.push({ mask, before, after: this.snapshotTile(tile) });
+                changes.push({
+                    mask: item.mask,
+                    variation: item.variation,
+                    variationId: item.variationId,
+                    before: item.before,
+                    after: this.snapshotTile(tile)
+                });
             });
             if (!changes.length) return;
 
             this.undoStack.push({
                 gridId: entry.gridId,
                 mask: entry.firstMask != null ? entry.firstMask : this.selectedMask,
+                variation: entry.firstVariation || 0,
+                variationId: entry.firstVariationId || null,
                 changes
             });
             if (this.undoStack.length > 60) this.undoStack.shift();
@@ -1099,16 +1270,39 @@
             if (!grid) return null;
             const changes = Array.isArray(entry.changes)
                 ? entry.changes
-                : [{ mask: entry.mask, before: entry.before, after: entry.after }];
+                : [{ mask: entry.mask, variation: 0, before: entry.before, after: entry.after }];
+
+            let primaryVariation = null;
+            const primaryMask = entry.mask != null ? entry.mask : changes[0].mask;
 
             changes.forEach(change => {
-                const tile = grid.tiles[change.mask];
+                const list = Core.getVariations(grid, change.mask);
+                let variation;
+                if (change.variationId) {
+                    variation = list.findIndex(tile => tile.id === change.variationId);
+                    if (variation < 0) return; // This variation was deleted.
+                } else {
+                    variation = Core.clamp(Number(change.variation) || 0, 0, list.length - 1);
+                }
+                const tile = list[variation];
                 if (!tile || !change[side]) return;
                 this.applyTileSnapshot(tile, change[side]);
+                if (Core.getActiveVariationIndex(grid, change.mask) === variation) {
+                    grid.tiles[change.mask] = tile;
+                }
                 Core.invalidateTile(grid, change.mask);
+                if (change.mask === primaryMask && primaryVariation == null) {
+                    primaryVariation = variation;
+                }
             });
 
-            return { grid, mask: entry.mask != null ? entry.mask : changes[0].mask };
+            return {
+                grid,
+                mask: primaryMask,
+                variation: primaryVariation != null
+                    ? primaryVariation
+                    : (entry.variation != null ? entry.variation : (changes[0].variation || 0))
+            };
         },
 
         undo() {
@@ -1120,6 +1314,7 @@
 
             this.project.activeGridId = restored.grid.id;
             this.selectedMask = restored.mask;
+            Core.setActiveVariation(restored.grid, restored.mask, restored.variation || 0);
             this.ensureSelectedMask();
             this.updateHistoryButtons();
             this.renderAll();
@@ -1136,6 +1331,7 @@
 
             this.project.activeGridId = restored.grid.id;
             this.selectedMask = restored.mask;
+            Core.setActiveVariation(restored.grid, restored.mask, restored.variation || 0);
             this.ensureSelectedMask();
             this.updateHistoryButtons();
             this.renderAll();
@@ -1293,8 +1489,9 @@
         deleteLayer() {
             const tile = this.activeTile();
             if (!tile) return;
-            if (tile.layers.length <= 1) {
-                this.notify('info', 'A tile needs at least one layer');
+            const userLayers = tile.layers.filter(layer => !(layer.system || layer.name === 'Edge sync'));
+            if (userLayers.length <= 1) {
+                this.notify('info', 'A tile needs at least one drawable layer');
                 return;
             }
             this.beginHistory(this.selectedMask);
@@ -1367,6 +1564,7 @@
             this.renderAtlas();
             this.renderAtlasList();
             this.renderEditor();
+            this.renderVariations();
             this.renderLayers();
             this.renderGridList();
             this.renderGridSettings();
@@ -1417,6 +1615,16 @@
                 wrap.appendChild(indexBadge);
 
                 if (mask !== 0) {
+                    const variationCount = Core.getVariations(grid, mask).length;
+                    if (variationCount > 1) {
+                        const varBadge = document.createElement('span');
+                        varBadge.className = 'ds-atlas-var-count';
+                        varBadge.textContent = `×${variationCount}`;
+                        wrap.appendChild(varBadge);
+                    }
+                }
+
+                if (mask !== 0) {
                     const bitDots = document.createElement('span');
                     bitDots.className = 'ds-atlas-bit-dots';
                     [1, 2, 4, 8].forEach(bit => {
@@ -1462,9 +1670,14 @@
             const grid = this.activeGrid();
             if (!grid) return;
             const count = grid.mode === 9 ? 9 : 15;
+            const masks = grid.mode === 9 ? Core.MASKS_9 : Core.MASKS_15;
+            const variationTotal = masks.reduce((sum, mask) => {
+                return sum + (mask === 0 ? 0 : Core.getVariations(grid, mask).length);
+            }, 0);
             this.els.dsAtlasSubtitle.textContent =
-                `${grid.name} · ${count} authored tiles · ${this.tileSize()} px` +
-                (grid.mode === 9 ? ' · 9-tile set' : ' · 15-tile full set');
+                `${grid.name} · ${variationTotal} tile${variationTotal === 1 ? '' : 's'} · ${this.tileSize()} px` +
+                (grid.mode === 9 ? ' · 9-tile set' : ' · 15-tile set') +
+                (variationTotal > count ? ' · variations' : '');
 
             this.els.dsAtlasBadges.innerHTML = '';
             const roleBadge = document.createElement('span');
@@ -1509,16 +1722,20 @@
                 const name = document.createElement('strong');
                 name.textContent = mask === 0 ? 'Background' : Core.MASK_SHORT[mask];
                 const sub = document.createElement('small');
+                const varCount = mask === 0 ? 1 : Core.getVariations(grid, mask).length;
+                const varActive = mask === 0 ? 0 : Core.getActiveVariationIndex(grid, mask);
                 sub.textContent = mask === 0
                     ? 'empty / background cell'
-                    : `#${mask} · ${Core.MASK_NAMES[mask]}`;
+                    : `#${mask} · ${Core.MASK_NAMES[mask]}${varCount > 1 ? ` · ${varCount} variations` : ''}`;
                 text.append(name, sub);
 
                 const state = document.createElement('span');
                 state.className = 'ds-atlas-list-state';
                 const stateLabel = document.createElement('span');
                 stateLabel.className = 'ds-atlas-list-label';
-                stateLabel.textContent = mask === this.selectedMask ? 'Editing' : '';
+                stateLabel.textContent = mask === this.selectedMask
+                    ? (varCount > 1 ? `Editing · V${varActive + 1}` : 'Editing')
+                    : '';
                 state.appendChild(stateLabel);
                 if (mask !== 0) {
                     const bits = document.createElement('span');
@@ -1576,7 +1793,8 @@
         renderEditor() {
             const tile = this.activeTile();
             const size = this.tileSize();
-            const internal = size * 3;
+            const internal = size * 2;
+            const half = Math.floor(size / 2);
             const canvas = this.els.dsEditorCanvas;
             const ctx = this.els.editorCtx;
 
@@ -1586,17 +1804,23 @@
             }
 
             ctx.clearRect(0, 0, internal, internal);
+            ctx.imageSmoothingEnabled = false;
 
-            // 3×3 margin: repeat the selected tile so strokes can cross a seam
-            // and so wrapping/clipping is visible in context.
+            // Centre tile at full size, plus half of each neighbouring copy at
+            // 50% opacity. The canvas is 2×tile, so the margin is half a tile
+            // on every side while still showing the seam.
             if (tile) {
                 const composite = Core.compositeTile(tile, size);
-                ctx.imageSmoothingEnabled = false;
-                for (let row = 0; row < 3; row++) {
-                    for (let col = 0; col < 3; col++) {
-                        ctx.drawImage(composite, col * size, row * size);
+                ctx.save();
+                ctx.globalAlpha = 0.5;
+                for (let row = -1; row <= 1; row++) {
+                    for (let col = -1; col <= 1; col++) {
+                        if (row === 0 && col === 0) continue;
+                        ctx.drawImage(composite, half + col * size, half + row * size);
                     }
                 }
+                ctx.restore();
+                ctx.drawImage(composite, half, half);
             }
 
             if (this.showPixelGrid && size <= 64) {
@@ -1616,14 +1840,6 @@
                 ctx.restore();
             }
 
-            // Mark the centre tile.
-            ctx.save();
-            ctx.strokeStyle = 'rgba(67, 217, 255, 0.62)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([7, 5]);
-            ctx.strokeRect(size + 1, size + 1, size - 2, size - 2);
-            ctx.restore();
-
             this.renderTileInfo();
         },
 
@@ -1631,10 +1847,14 @@
             const tile = this.activeTile();
             const mask = this.selectedMask;
 
-            this.els.dsEditorTitle.textContent = `Tile #${mask} — ${Core.MASK_SHORT[mask]}`;
+            const grid = this.activeGrid();
+            const variations = grid ? Core.getVariations(grid, mask) : [];
+            const variationIndex = grid ? Core.getActiveVariationIndex(grid, mask) : 0;
+            this.els.dsEditorTitle.textContent = `Tile #${mask} — ${Core.MASK_SHORT[mask]}` +
+                (variations.length > 1 ? ` · Var ${variationIndex + 1}/${variations.length}` : '');
             this.els.dsEditorSubtitle.textContent = mask === 15
-                ? 'Fully filled tile — used in the middle of a terrain chunk. The 3×3 margin repeats the tile so you can draw across seams.'
-                : `${Core.MASK_NAMES[mask]}. The 3×3 margin repeats the tile so you can draw across seams; Edge wrap keeps strokes continuous.`;
+                ? 'Fully filled tile — used in the middle of a terrain chunk. The half-tile margin shows the seam at 50% opacity.'
+                : `${Core.MASK_NAMES[mask]}. The half-tile margin shows the neighbouring copy at 50% opacity so you can keep the seam continuous.`;
 
             this.els.dsMaskTitle.textContent = Core.MASK_NAMES[mask];
             const bits = [];
@@ -1652,14 +1872,92 @@
             });
 
             if (tile) {
-                const visible = tile.layers.filter(layer => layer.visible).length;
+                const userLayers = tile.layers.filter(layer => !(layer.system || layer.name === 'Edge sync'));
+                const visible = userLayers.filter(layer => layer.visible).length;
                 this.els.dsTileInfo.innerHTML =
                     `<strong>${this.tileSize()}×${this.tileSize()} px</strong> · ` +
-                    `${tile.layers.length} layer${tile.layers.length === 1 ? '' : 's'} · ` +
+                    `${userLayers.length} layer${userLayers.length === 1 ? '' : 's'} · ` +
                     `${visible} visible`;
             } else {
                 this.els.dsTileInfo.textContent = '';
             }
+        },
+
+        renderVariations() {
+            const grid = this.activeGrid();
+            const mask = this.selectedMask;
+            const container = this.els.dsVariationChips;
+            if (!grid || !container) return;
+
+            const list = Core.getVariations(grid, mask);
+            const active = Core.getActiveVariationIndex(grid, mask);
+            container.innerHTML = '';
+
+            list.forEach((tile, index) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'ds-variation-chip' + (index === active ? ' active' : '');
+                chip.dataset.index = index;
+                chip.textContent = String(index + 1);
+                chip.title = `Variation ${index + 1} of ${list.length}`;
+                container.appendChild(chip);
+            });
+
+            this.els.dsVariationCount.textContent = String(list.length);
+            this.els.dsDeleteVariationBtn.disabled = list.length <= 1;
+        },
+
+        selectVariation(index) {
+            const grid = this.activeGrid();
+            if (!grid) return;
+            const list = Core.getVariations(grid, this.selectedMask);
+            if (!list.length) return;
+            const next = Core.clamp(Number(index) || 0, 0, list.length - 1);
+            Core.setActiveVariation(grid, this.selectedMask, next);
+            this.renderEditor();
+            this.renderVariations();
+            this.renderLayers();
+            this.refreshAtlasThumb(this.selectedMask);
+            this.renderAtlasList();
+            this.renderTileInfo();
+            this.schedulePreview();
+            this.markDirty();
+        },
+
+        addVariation() {
+            const grid = this.activeGrid();
+            if (!grid) return;
+            const mask = this.selectedMask;
+            Core.addVariation(grid, mask, true);
+            this.renderAtlas();
+            this.renderEditor();
+            this.renderVariations();
+            this.renderLayers();
+            this.renderTileInfo();
+            this.schedulePreview();
+            this.markDirty();
+            this.notify('success', `Added variation ${Core.getVariations(grid, mask).length} to tile #${mask}`);
+        },
+
+        deleteVariation() {
+            const grid = this.activeGrid();
+            if (!grid) return;
+            const mask = this.selectedMask;
+            const list = Core.getVariations(grid, mask);
+            if (list.length <= 1) {
+                this.notify('info', 'A tile needs at least one variation');
+                return;
+            }
+            const active = Core.getActiveVariationIndex(grid, mask);
+            Core.deleteVariation(grid, mask, active);
+            this.renderAtlas();
+            this.renderEditor();
+            this.renderVariations();
+            this.renderLayers();
+            this.renderTileInfo();
+            this.schedulePreview();
+            this.markDirty();
+            this.notify('info', `Removed variation from tile #${mask}`);
         },
 
         renderLayers() {
@@ -1674,13 +1972,20 @@
 
             this.els.dsLayerOpacityWrap.classList.remove('hidden');
 
-            const activeLayer = tile.layers[tile.activeLayer] || tile.layers[0];
+            const userLayers = tile.layers
+                .map((layer, index) => ({ layer, index }))
+                .filter(({ layer }) => !(layer.system || layer.name === 'Edge sync'));
+            if (userLayers.length && !userLayers.some(item => item.index === tile.activeLayer)) {
+                tile.activeLayer = userLayers[0].index;
+            }
+
+            const activeLayer = tile.layers[tile.activeLayer] || (userLayers[0] && userLayers[0].layer) || tile.layers[0];
             const opacityValue = Math.round((activeLayer ? activeLayer.opacity : 1) * 100);
             this.els.dsLayerOpacity.value = opacityValue;
             this.els.dsLayerOpacityLabel.textContent = `${opacityValue}%`;
 
-            tile.layers
-                .map((layer, index) => ({ layer, index }))
+            userLayers
+                .slice()
                 .reverse()
                 .forEach(({ layer, index }) => {
                     const row = document.createElement('div');
@@ -1874,7 +2179,13 @@
                         const renderMask = Core.resolveMask(grid, mask);
                         if (!renderMask) continue;
 
-                        const tileCanvas = Core.getTileCanvas(grid, renderMask);
+                        const variations = Core.getVariations(grid, renderMask);
+                        let variation = 0;
+                        if (variations.length > 1) {
+                            const seed = (grid.id || 'grid').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+                            variation = Math.floor(Core.hash(gx, gy, seed) * variations.length) % variations.length;
+                        }
+                        const tileCanvas = Core.getVariationCanvas(grid, renderMask, variation);
                         if (!tileCanvas) continue;
 
                         ctx.drawImage(tileCanvas, gx * tileSize, gy * tileSize, tileSize, tileSize);
@@ -2020,10 +2331,12 @@
             this.ensureSelectedMask();
             this.renderAtlas();
             this.renderEditor();
+            this.renderVariations();
             this.renderLayers();
             this.renderGridList();
             this.renderGridSettings();
             this.renderPreview();
+            this.renderExportHint();
             this.updateFooter();
             this.markDirty();
         },
@@ -2080,22 +2393,13 @@
             copy.visible = source.visible;
             copy.cells = new Uint8Array(source.cells);
 
-            source.tiles.forEach((tile, mask) => {
-                const clone = Core.createTile(this.tileSize());
-                clone.activeLayer = tile.activeLayer;
-                clone.layers = tile.layers.map(layer => {
-                    const canvas = Core.makeCanvas(layer.canvas.width, layer.canvas.height);
-                    canvas.getContext('2d').drawImage(layer.canvas, 0, 0);
-                    return {
-                        id: Core.uid(),
-                        name: layer.name,
-                        visible: layer.visible,
-                        opacity: layer.opacity,
-                        canvas
-                    };
-                });
-                copy.tiles[mask] = clone;
-            });
+            const size = this.tileSize();
+            for (let mask = 0; mask < 16; mask++) {
+                const variations = Core.getVariations(source, mask).map(tile => Core.cloneTile(tile, size));
+                copy.variations[mask] = variations.length ? variations : [Core.createTile(size)];
+                copy.activeVariation[mask] = Core.getActiveVariationIndex(source, mask);
+                copy.tiles[mask] = copy.variations[mask][copy.activeVariation[mask]] || Core.createTile(size);
+            }
 
             this.project.grids.push(copy);
             this.project.activeGridId = copy.id;
@@ -2255,6 +2559,7 @@
         exportOptions() {
             return {
                 layout: this.els.dsExportLayout.value,
+                variations: this.els.dsExportVariations.value,
                 scale: parseInt(this.els.dsExportScale.value, 10) || 1,
                 gap: parseInt(this.els.dsExportGap.value, 10) || 0,
                 margin: parseInt(this.els.dsExportMargin.value, 10) || 0,
@@ -2270,7 +2575,9 @@
             const rendered = Core.renderGridAtlas(this.project, grid, options);
             const filename = `${Core.safeFilename(this.project.name)}-${Core.safeFilename(grid.name)}-${rendered.layout.cols}x${rendered.layout.rows}.png`;
             Core.downloadCanvas(rendered.canvas, filename);
-            this.notify('success', `Exported ${rendered.layout.cols}×${rendered.layout.rows} atlas (${rendered.layout.masks.length} cells)`);
+            const variationCols = rendered.layout.variationCols || 1;
+            const maskCount = rendered.layout.masks.filter(mask => mask !== 0).length;
+            this.notify('success', `Exported ${rendered.layout.cols}×${rendered.layout.rows} atlas (${maskCount} masks${variationCols > 1 ? `, ${variationCols} variation columns` : ''})`);
         },
 
         async exportAllGrids() {
@@ -2308,9 +2615,11 @@
             const layout = this.els.dsExportLayout.value;
             const grid = this.activeGrid();
             const mode = layout === 'auto' ? (grid ? grid.mode : 15) : Number(layout);
-            this.els.dsExportHint.innerHTML = mode === 9
-                ? 'The 3×3 atlas contains the 9 outer-edge masks: corners, edges and fill. Unsupported inner-corner masks fall back to the fill tile at runtime.'
-                : 'The 4×4 atlas contains 15 authored masks plus one background cell. Mask 0 is the empty/background slot.';
+            const allVariations = this.els.dsExportVariations.value === 'all';
+            this.els.dsExportHint.innerHTML = (mode === 9
+                ? 'The 3×3 atlas contains the 9 outer-edge masks: corners, edges and fill.'
+                : 'The 4×4 atlas contains 15 authored masks plus one background cell.') +
+                (allVariations ? ' Variations are added as extra columns beside each mask.' : ' Only the active variation of each tile is exported.');
         },
 
         scrollToExport() {
@@ -2457,15 +2766,20 @@
             this.els.dsAtlasGrid.querySelectorAll('.ds-atlas-cell').forEach(cell => {
                 cell.classList.toggle('active', parseInt(cell.dataset.mask, 10) === mask);
             });
+            const selectedVariations = Core.getVariations(grid, mask);
+            const selectedVariation = Core.getActiveVariationIndex(grid, mask);
+            const editingLabel = selectedVariations.length > 1
+                ? `Editing · V${selectedVariation + 1}`
+                : 'Editing';
             this.els.dsAtlasList.querySelectorAll('.ds-atlas-list-item').forEach(row => {
-                row.classList.toggle('active', parseInt(row.dataset.mask, 10) === mask);
+                const rowMask = parseInt(row.dataset.mask, 10);
+                row.classList.toggle('active', rowMask === mask);
                 const label = row.querySelector('.ds-atlas-list-label');
-                if (label) {
-                    label.textContent = parseInt(row.dataset.mask, 10) === mask ? 'Editing' : '';
-                }
+                if (label) label.textContent = rowMask === mask ? editingLabel : '';
             });
 
             this.renderEditor();
+            this.renderVariations();
             this.renderLayers();
             this.markDirty();
         }

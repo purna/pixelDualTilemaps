@@ -1096,6 +1096,83 @@ a:hover {
     background: var(--green);
 }
 
+
+.ds-variation-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0 0 10px;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-2);
+}
+
+.ds-variation-count {
+    min-width: 18px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(67, 217, 255, 0.12);
+    color: var(--cyan);
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ds-variation-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+    min-width: 80px;
+}
+
+.ds-variation-chip {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg-3);
+    color: var(--muted);
+    font: inherit;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+
+.ds-variation-chip:hover {
+    border-color: var(--green);
+    color: var(--text);
+}
+
+.ds-variation-chip.active {
+    border-color: var(--green);
+    background: rgba(111, 182, 58, 0.16);
+    color: var(--green);
+    font-weight: 700;
+}
+
+.ds-variation-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.ds-atlas-var-count {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(9, 12, 20, 0.8);
+    color: var(--cyan);
+    font-size: 9px;
+    font-weight: 700;
+    pointer-events: none;
+}
+
 /* ================= EDITOR ================= */
 
 .ds-editor-layout {
@@ -1112,12 +1189,21 @@ a:hover {
     aspect-ratio: 1;
     border-radius: 9px;
     border: 1px solid var(--line);
-    background:
-        conic-gradient(from 0deg, #1a1e30 25%, #2a2f4a 0 50%, #1a1e30 0 75%, #2a2f4a 0) 0 0 / 12px 12px;
-    overflow: hidden;
+    background: var(--bg-0);
+    overflow: auto;
     touch-action: none;
     cursor: crosshair;
     margin: 0 auto;
+}
+
+.ds-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+    background:
+        conic-gradient(from 0deg, #1a1e30 25%, #2a2f4a 0 50%, #1a1e30 0 75%, #2a2f4a 0) 0 0 / 12px 12px;
 }
 
 .ds-editor-stage canvas {
@@ -1126,6 +1212,39 @@ a:hover {
     height: 100%;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+}
+
+.ds-center-outline {
+    position: absolute;
+    left: 25%;
+    top: 25%;
+    width: 50%;
+    height: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.92);
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+.ds-zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg-2);
+}
+
+.ds-zoom-group .ds-btn {
+    padding: 5px 7px;
+}
+
+.ds-zoom-label {
+    min-width: 34px;
+    text-align: center;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
 }
 
 .ds-editor-side {

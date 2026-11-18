@@ -102,6 +102,7 @@
                         <label class="ds-toggle"><input type="checkbox" id="dsMirrorX"><span>Mirror X</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsMirrorY"><span>Mirror Y</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsShowPixelGrid" checked><span>Pixel grid</span></label>
+                        <label class="ds-toggle"><input type="checkbox" id="dsCenterBorder" checked><span>Centre border</span></label>
                     </div>
                 </section>
 
@@ -170,6 +171,12 @@
                                 <p id="dsEditorSubtitle" class="ds-subtitle">Draw the selected dual-grid tile.</p>
                             </div>
                             <div class="ds-head-actions">
+                                <div class="ds-zoom-group" title="Zoom the drawing canvas (Ctrl/⌘ + wheel)">
+                                    <button id="dsZoomOutBtn" class="ds-btn ds-small" type="button" title="Zoom out"><i class="fas fa-minus"></i></button>
+                                    <span id="dsZoomLabel" class="ds-zoom-label">100%</span>
+                                    <button id="dsZoomInBtn" class="ds-btn ds-small" type="button" title="Zoom in"><i class="fas fa-plus"></i></button>
+                                    <button id="dsZoomFitBtn" class="ds-btn ds-small" type="button" title="Fit canvas"><i class="fas fa-expand"></i></button>
+                                </div>
                                 <button id="dsCopyTileBtn" class="ds-btn ds-small" title="Copy this tile"><i class="fas fa-copy"></i><span>Copy</span></button>
                                 <button id="dsPasteTileBtn" class="ds-btn ds-small" title="Paste tile into this slot"><i class="fas fa-paste"></i><span>Paste</span></button>
                                 <button id="dsFlipHBtn" class="ds-btn ds-small" title="Flip horizontally"><i class="fas fa-arrows-left-right"></i></button>
@@ -178,9 +185,22 @@
                             </div>
                         </div>
 
+                        <div class="ds-variation-bar">
+                            <span class="ds-label">Variations</span>
+                            <span id="dsVariationCount" class="ds-variation-count">1</span>
+                            <div id="dsVariationChips" class="ds-variation-chips" role="group" aria-label="Tile variations"></div>
+                            <div class="ds-variation-actions">
+                                <button id="dsAddVariationBtn" class="ds-btn ds-small" type="button" title="Duplicate this variation"><i class="fas fa-plus"></i><span>New variation</span></button>
+                                <button id="dsDeleteVariationBtn" class="ds-btn ds-small ds-danger" type="button" title="Delete this variation"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+
                         <div class="ds-editor-layout">
                             <div class="ds-editor-stage" id="dsEditorStage">
-                                <canvas id="dsEditorCanvas" width="96" height="96"></canvas>
+                                <div class="ds-canvas-wrap" id="dsCanvasWrap">
+                                    <canvas id="dsEditorCanvas" width="64" height="64"></canvas>
+                                    <div class="ds-center-outline" id="dsCenterOutline" aria-hidden="true"></div>
+                                </div>
                             </div>
                             <div class="ds-editor-side">
                                 <div class="ds-mask-card">
@@ -197,9 +217,9 @@
                                 </div>
                                 <div class="ds-tile-info" id="dsTileInfo"></div>
                                 <p class="ds-hint ds-small-hint">
-                                    The margin repeats the selected tile. Draw across a seam — with
-                                    <strong>Sync edges</strong> on, the matching edge is copied into every
-                                    neighbouring variant too.
+                                    The margin shows the neighbouring half at 50% opacity. Draw across a
+                                    seam — with <strong>Sync edges</strong> on, the matching edge is copied
+                                    into every neighbouring variation too.
                                 </p>
                             </div>
                         </div>
@@ -328,6 +348,13 @@
                             <option value="9">3×3 · 9 tiles</option>
                         </select>
                     </div>
+                    <div class="ds-field">
+                        <label for="dsExportVariations">Variations</label>
+                        <select id="dsExportVariations">
+                            <option value="active">Active variation only</option>
+                            <option value="all">All variations</option>
+                        </select>
+                    </div>
                     <div class="ds-field-row">
                         <div class="ds-field">
                             <label for="dsExportScale">Scale</label>
@@ -364,7 +391,7 @@
                     <button id="dsExportJsonBtn" class="ds-btn ds-full"><i class="fas fa-code"></i> Export project JSON</button>
                     <p class="ds-hint ds-small-hint" id="dsExportHint">
                         The 4×4 atlas contains 15 authored masks plus one background cell. The 3×3 atlas contains
-                        the 9 outer-edge masks.
+                        the 9 outer-edge masks. Choose All variations to add extra columns for each mask.
                     </p>
                 </section>
 
@@ -436,12 +463,16 @@
                     <h3><i class="fas fa-table-cells"></i> 1. Paint a tile</h3>
                     <p>Pick a tile from the atlas, draw in the big editor, and the atlas thumbnail plus the
                         neighbour preview update immediately. Each tile represents one corner mask.</p>
+                    <p>Use the <strong>Variations</strong> bar to create alternate art for the same mask.
+                        The live preview picks variations stably by map position, and edge sync keeps every
+                        variation seamless.</p>
 
                     <h3><i class="fas fa-wand-magic-sparkles"></i> 2. Test neighbours</h3>
-                    <p>The editor canvas is a 3×3 tile view. The surrounding margin is the selected tile
-                        repeating, so you can draw over an edge and see the wrapped stroke. With
-                        <strong>Sync edges</strong> on, matching edge pixels are copied into every neighbouring
-                        tile variant so all seams stay consistent.</p>
+                    <p>The editor shows the centre tile at full size with a half-tile margin at 50% opacity.
+                        Draw across a seam to keep it continuous. With <strong>Sync edges</strong> on, the
+                        matching edge pixels are copied into every compatible neighbouring mask and every
+                        variation. Use the zoom controls or <strong>Ctrl/⌘ + wheel</strong> to zoom, and toggle
+                        the thin <strong>Centre border</strong> off if it gets in the way.</p>
                     <p>Paint the test map under <strong>Neighbour Preview</strong>. The preview resolves every
                         2×2 corner mask and picks the matching tile, so you can check edges and inner corners
                         before exporting.</p>

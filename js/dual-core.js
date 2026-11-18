@@ -120,9 +120,34 @@ window.DualCore = (function () {
 
     function createTile(size) {
         return {
+            id: uid(),
             layers: [createLayer(size, 'Base')],
             activeLayer: 0
         };
+    }
+
+    function cloneTile(tile, size) {
+        const copy = createTile(size);
+        if (!tile) return copy;
+        copy.activeLayer = tile.activeLayer || 0;
+        copy.layers = (tile.layers || []).map(layer => {
+            const canvas = makeCanvas(size, size);
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            if (layer.canvas) {
+                ctx.drawImage(layer.canvas, 0, 0, layer.canvas.width, layer.canvas.height, 0, 0, size, size);
+            }
+            return {
+                id: uid(),
+                name: layer.name || 'Layer',
+                visible: layer.visible !== false,
+                opacity: layer.opacity == null ? 1 : layer.opacity,
+                canvas
+            };
+        });
+        if (!copy.layers.length) copy.layers = [createLayer(size, 'Base')];
+        copy.activeLayer = clamp(copy.activeLayer, 0, copy.layers.length - 1);
+        return copy;
     }
 
     function createGrid(options) {
@@ -130,13 +155,16 @@ window.DualCore = (function () {
         const size = opts.size || 32;
         const mapW = opts.mapW || 24;
         const mapH = opts.mapH || 14;
+        const tiles = Array.from({ length: 16 }, () => createTile(size));
         const grid = {
             id: opts.id || uid(),
             name: opts.name || 'Terrain',
             role: opts.role || 'outer',
             mode: opts.mode === 9 ? 9 : 15,
             visible: opts.visible !== false,
-            tiles: Array.from({ length: 16 }, () => createTile(size)),
+            tiles,
+            variations: tiles.map(tile => [tile]),
+            activeVariation: new Array(16).fill(0),
             cells: new Uint8Array(mapW * mapH),
             _size: size,
             tileset: null
@@ -215,12 +243,80 @@ window.DualCore = (function () {
         return output;
     }
 
+    function tileSizeOf(grid) {
+        const first = grid && grid.tiles && grid.tiles[0];
+        const canvas = first && first.layers && first.layers[0] && first.layers[0].canvas;
+        return canvas ? canvas.width : 32;
+    }
+
+    function getVariations(grid, mask) {
+        if (!grid) return [];
+        if (!Array.isArray(grid.variations)) grid.variations = [];
+        if (!Array.isArray(grid.variations[mask]) || !grid.variations[mask].length) {
+            const fallback = (grid.tiles && grid.tiles[mask]) || createTile(tileSizeOf(grid));
+            grid.variations[mask] = [fallback];
+        }
+        return grid.variations[mask];
+    }
+
+    function getActiveVariationIndex(grid, mask) {
+        if (!grid || mask === 0) return 0;
+        const list = getVariations(grid, mask);
+        const raw = Array.isArray(grid.activeVariation) ? grid.activeVariation[mask] : 0;
+        return clamp(Number(raw) || 0, 0, list.length - 1);
+    }
+
+    function setActiveVariation(grid, mask, index) {
+        if (!grid || mask === 0) return 0;
+        const list = getVariations(grid, mask);
+        const next = clamp(Number(index) || 0, 0, list.length - 1);
+        if (!Array.isArray(grid.activeVariation)) grid.activeVariation = new Array(16).fill(0);
+        grid.activeVariation[mask] = next;
+        grid.tiles[mask] = list[next];
+        invalidateTile(grid, mask);
+        return next;
+    }
+
+    function addVariation(grid, mask, copyCurrent) {
+        if (!grid || mask === 0) return null;
+        const size = tileSizeOf(grid);
+        const list = getVariations(grid, mask);
+        const source = list[getActiveVariationIndex(grid, mask)] || grid.tiles[mask];
+        const tile = copyCurrent === false ? createTile(size) : cloneTile(source, size);
+        list.push(tile);
+        setActiveVariation(grid, mask, list.length - 1);
+        return tile;
+    }
+
+    function deleteVariation(grid, mask, index) {
+        if (!grid || mask === 0) return false;
+        const list = getVariations(grid, mask);
+        if (list.length <= 1) return false;
+        const target = clamp(Number(index) || 0, 0, list.length - 1);
+        list.splice(target, 1);
+        setActiveVariation(grid, mask, Math.min(target, list.length - 1));
+        return true;
+    }
+
+    function getVariationCanvas(grid, mask, index) {
+        if (!grid || mask === 0) return null;
+        if (!grid.cache) grid.cache = new Map();
+        const list = getVariations(grid, mask);
+        const variation = clamp(Number(index) || 0, 0, list.length - 1);
+        const key = `${mask}:${variation}`;
+        if (grid.cache.has(key)) return grid.cache.get(key);
+        const composited = compositeTile(list[variation], tileSizeOf(grid));
+        grid.cache.set(key, composited);
+        return composited;
+    }
+
     function getTileCanvas(grid, mask) {
         if (!grid || mask === 0) return null;
         if (!grid.cache) grid.cache = new Map();
         if (grid.cache.has(mask)) return grid.cache.get(mask);
 
-        const tile = grid.tiles[mask];
+        const variation = getActiveVariationIndex(grid, mask);
+        const tile = getVariations(grid, mask)[variation];
         if (!tile) return null;
 
         const composited = compositeTile(tile, tileSizeOf(grid));
@@ -228,14 +324,13 @@ window.DualCore = (function () {
         return composited;
     }
 
-    function tileSizeOf(grid) {
-        const first = grid && grid.tiles && grid.tiles[0];
-        const canvas = first && first.layers && first.layers[0] && first.layers[0].canvas;
-        return canvas ? canvas.width : 32;
-    }
-
     function invalidateTile(grid, mask) {
-        if (grid && grid.cache) grid.cache.delete(mask);
+        if (!grid || !grid.cache) return;
+        grid.cache.delete(mask);
+        const prefix = `${mask}:`;
+        Array.from(grid.cache.keys()).forEach(key => {
+            if (typeof key === 'string' && key.indexOf(prefix) === 0) grid.cache.delete(key);
+        });
     }
 
     /**
@@ -580,18 +675,22 @@ window.DualCore = (function () {
        ------------------------------------------------------------ */
 
     function resizeGridTiles(grid, newSize) {
-        grid.tiles.forEach(tile => {
-            tile.layers.forEach(layer => {
-                const old = layer.canvas;
-                const next = makeCanvas(newSize, newSize);
-                const ctx = next.getContext('2d');
-                ctx.imageSmoothingEnabled = false;
-                if (old && old.width && old.height) {
-                    ctx.drawImage(old, 0, 0, old.width, old.height, 0, 0, newSize, newSize);
-                }
-                layer.canvas = next;
+        if (!grid) return;
+        for (let mask = 0; mask < 16; mask++) {
+            getVariations(grid, mask).forEach(tile => {
+                tile.layers.forEach(layer => {
+                    const old = layer.canvas;
+                    const next = makeCanvas(newSize, newSize);
+                    const ctx = next.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+                    if (old && old.width && old.height) {
+                        ctx.drawImage(old, 0, 0, old.width, old.height, 0, 0, newSize, newSize);
+                    }
+                    layer.canvas = next;
+                });
             });
-        });
+        }
+        grid._size = newSize;
         invalidateGrid(grid);
     }
 
@@ -628,6 +727,19 @@ window.DualCore = (function () {
        ------------------------------------------------------------ */
 
     function serializeProject(project) {
+        const serializeTile = (tile, mask) => ({
+            id: tile.id || uid(),
+            mask,
+            activeLayer: tile.activeLayer || 0,
+            layers: tile.layers.map(layer => ({
+                id: layer.id,
+                name: layer.name,
+                visible: layer.visible !== false,
+                opacity: layer.opacity == null ? 1 : layer.opacity,
+                data: layer.canvas.toDataURL('image/png')
+            }))
+        });
+
         return {
             format: FORMAT,
             version: VERSION,
@@ -646,17 +758,12 @@ window.DualCore = (function () {
                 mode: grid.mode,
                 visible: grid.visible !== false,
                 cells: Array.from(grid.cells),
-                tiles: grid.tiles.map((tile, mask) => ({
-                    mask,
-                    activeLayer: tile.activeLayer || 0,
-                    layers: tile.layers.map(layer => ({
-                        id: layer.id,
-                        name: layer.name,
-                        visible: layer.visible !== false,
-                        opacity: layer.opacity == null ? 1 : layer.opacity,
-                        data: layer.canvas.toDataURL('image/png')
-                    }))
-                }))
+                activeVariation: Array.from({ length: 16 }, (_, mask) => getActiveVariationIndex(grid, mask)),
+                tiles: grid.tiles.map((tile, mask) => serializeTile(tile, mask)),
+                variations: Array.from({ length: 16 }, (_, mask) => {
+                    const list = getVariations(grid, mask);
+                    return list.length > 1 ? list.map(tile => serializeTile(tile, mask)) : null;
+                })
             }))
         };
     }
@@ -703,11 +810,9 @@ window.DualCore = (function () {
                 }
             }
 
-            const tileInputs = Array.isArray(gridData.tiles) ? gridData.tiles : [];
-            for (const tileData of tileInputs) {
-                const mask = Number(tileData.mask);
-                if (!Number.isInteger(mask) || mask < 0 || mask > 15) continue;
+            const readTile = async (tileData) => {
                 const tile = createTile(size);
+                tile.id = tileData.id || tile.id;
                 tile.activeLayer = clamp(Number(tileData.activeLayer) || 0, 0, 127);
                 tile.layers = [];
 
@@ -733,8 +838,50 @@ window.DualCore = (function () {
                 }
 
                 if (!tile.layers.length) tile.layers = [createLayer(size, 'Base')];
+
+                // Older projects could have the auto edge-sync layer on top.
+                // Keep it at the bottom so drawable layers always win.
+                const syncLayers = tile.layers.filter(layer => layer.name === 'Edge sync');
+                if (syncLayers.length) {
+                    const active = tile.layers[tile.activeLayer] || tile.layers[0];
+                    syncLayers.forEach(layer => {
+                        layer.system = true;
+                        layer.visible = true;
+                        layer.opacity = 1;
+                    });
+                    tile.layers = syncLayers.concat(tile.layers.filter(layer => layer.name !== 'Edge sync'));
+                    tile.activeLayer = Math.max(0, tile.layers.indexOf(active));
+                }
+
                 tile.activeLayer = Math.min(tile.activeLayer, tile.layers.length - 1);
-                grid.tiles[mask] = tile;
+                return tile;
+            };
+
+            const tileInputs = Array.isArray(gridData.tiles) ? gridData.tiles : [];
+            for (const tileData of tileInputs) {
+                const mask = Number(tileData.mask);
+                if (!Number.isInteger(mask) || mask < 0 || mask > 15) continue;
+                grid.tiles[mask] = await readTile(tileData);
+            }
+
+            // Rebuild variation lists. Older projects only have the active
+            // tile per mask, which becomes variation 1.
+            grid.variations = grid.tiles.map(tile => [tile]);
+            grid.activeVariation = new Array(16).fill(0);
+            if (Array.isArray(gridData.variations)) {
+                for (let mask = 1; mask < 16; mask++) {
+                    const listData = gridData.variations[mask];
+                    if (!Array.isArray(listData) || listData.length <= 1) continue;
+                    const list = [];
+                    for (const item of listData) {
+                        if (item) list.push(await readTile(item));
+                    }
+                    if (!list.length) continue;
+                    grid.variations[mask] = list;
+                    const active = clamp(Number(gridData.activeVariation && gridData.activeVariation[mask]) || 0, 0, list.length - 1);
+                    grid.activeVariation[mask] = active;
+                    grid.tiles[mask] = list[active];
+                }
             }
 
             grid._size = size;
@@ -778,9 +925,21 @@ window.DualCore = (function () {
         const gap = clamp(Number(opts.gap) || 0, 0, 128);
         const margin = clamp(Number(opts.margin) || 0, 0, 256);
         const transparent = opts.transparent !== false;
+        const allVariations = opts.variations === 'all';
 
-        const width = margin * 2 + layout.cols * drawSize + (layout.cols - 1) * gap;
-        const height = margin * 2 + layout.rows * drawSize + (layout.rows - 1) * gap;
+        let variationCols = 1;
+        if (allVariations) {
+            layout.masks.forEach(mask => {
+                if (mask !== 0) {
+                    variationCols = Math.max(variationCols, getVariations(grid, mask).length);
+                }
+            });
+        }
+
+        const cols = layout.cols * variationCols;
+        const rows = layout.rows;
+        const width = margin * 2 + cols * drawSize + (cols - 1) * gap;
+        const height = margin * 2 + rows * drawSize + (rows - 1) * gap;
 
         const canvas = makeCanvas(width, height);
         const ctx = canvas.getContext('2d');
@@ -794,18 +953,34 @@ window.DualCore = (function () {
         layout.masks.forEach((mask, index) => {
             if (mask === 0) return;
 
-            const col = index % layout.cols;
+            const baseCol = index % layout.cols;
             const row = Math.floor(index / layout.cols);
-            const x = margin + col * (drawSize + gap);
-            const y = margin + row * (drawSize + gap);
 
-            const tileCanvas = compositeTile(grid.tiles[mask], tileSize);
-            ctx.drawImage(tileCanvas, 0, 0, tileSize, tileSize, x, y, drawSize, drawSize);
+            for (let variation = 0; variation < variationCols; variation++) {
+                let tileCanvas;
+                if (allVariations) {
+                    if (variation >= getVariations(grid, mask).length) continue;
+                    tileCanvas = getVariationCanvas(grid, mask, variation);
+                } else {
+                    tileCanvas = getTileCanvas(grid, mask);
+                }
+                if (!tileCanvas) continue;
+
+                const col = baseCol * variationCols + variation;
+                const x = margin + col * (drawSize + gap);
+                const y = margin + row * (drawSize + gap);
+                ctx.drawImage(tileCanvas, 0, 0, tileSize, tileSize, x, y, drawSize, drawSize);
+            }
         });
 
         return {
             canvas,
-            layout,
+            layout: {
+                ...layout,
+                cols,
+                rows,
+                variationCols
+            },
             drawSize,
             tileSize,
             width,
@@ -891,6 +1066,7 @@ window.DualCore = (function () {
         hash,
         createLayer,
         createTile,
+        cloneTile,
         createGrid,
         createProject,
         createSampleProject,
@@ -898,6 +1074,12 @@ window.DualCore = (function () {
         getGrid,
         getActiveGrid,
         getTileCanvas,
+        getVariationCanvas,
+        getVariations,
+        getActiveVariationIndex,
+        setActiveVariation,
+        addVariation,
+        deleteVariation,
         compositeTile,
         invalidateGrid,
         invalidateTile,

@@ -25,7 +25,15 @@ the fill tile) is also supported for simpler outer-edge terrains.
 ## Features
 
 - **Tile atlas + large editor** — select any mask from a 3×3 or 4×4 atlas and draw it
-  at its native pixel size.
+  at its native pixel size. The canvas shows the centre tile at full opacity plus the
+  neighbouring half-tile margin at 50% opacity, so seams are visible while drawing.
+- **Zoomable canvas** — `−` / `+` / `Fit` controls, or `Ctrl/⌘ + wheel` over the editor.
+- **Centre border toggle** — a thin solid border marks the centre tile and can be
+  switched off when it gets in the way.
+- **Tile variations** — every mask can have several variations. Duplicate the active
+  variation, switch between chips, and the live preview picks variations stably by
+  map position. Edits to an edge are propagated to every matching neighbour and to the
+  other variations of the same mask.
 - **Live neighbour preview** — the test map is rendered with the dual-grid algorithm
   on every stroke, so edges, outer corners and inner corners can be checked instantly.
   A compact live preview stays visible in the right sidebar.
@@ -36,13 +44,17 @@ the fill tile) is also supported for simpler outer-edge terrains.
   layers.
 - **Pixel tools** — pencil, brush, eraser, flood fill and eyedropper, with brush size,
   opacity, edge-wrap drawing, mirror X/Y and a pixel-grid overlay.
-- **Undo / redo** for tile edits and layer operations.
+- **Seam sync** — with **Sync edges** on, drawing an edge copies it into every compatible
+  neighbouring mask and every variation, so the atlas stays seamless automatically.
+- **Undo / redo** for tile edits, sync changes and layer operations, including the
+  variation that was edited.
 - **Palette + recent colours**, persisted in browser storage.
 - **Project save / open** — a single `.dual-grid.json` file contains every grid, tile,
   layer and test map.
 - **Autosave** to local storage.
 - **PNG export** — active grid, all grids, or a combined sheet, with configurable
-  scale, gap, margin and background. Also exports the project JSON.
+  scale, gap, margin, background, and active-only or all-variation export. Also exports
+  the project JSON.
 - **Sample project** — a procedural meadow/wildflower set based on the hand-drawn
   dual-grid reference credited below.
 
@@ -54,12 +66,16 @@ the fill tile) is also supported for simpler outer-edge terrains.
    ```
    Then visit `http://localhost:8080`.
 2. The sample design loads automatically. Click a tile in the atlas and draw in the
-   large editor.
-3. Watch the **Live Preview** in the right sidebar and the larger **Neighbour Preview**
+   large editor. The half-tile margin repeats the neighbouring copy at 50% opacity.
+3. Draw across a seam. With **Sync edges** on, compatible neighbour masks and all their
+   variations receive the same edge pixels.
+4. Watch the **Live Preview** in the right sidebar and the larger **Neighbour Preview**
    below the editor.
-4. Paint the test map with left-click (fill) and right-click (empty) to try different
+5. Use **New variation** to make alternate art for the selected mask. The preview mixes
+   variations; **Export → Variations → All variations** exports them as extra columns.
+6. Paint the test map with left-click (fill) and right-click (empty) to try different
    neighbour arrangements.
-5. Use **Export active grid** for a PNG atlas.
+7. Use **Export active grid** for a PNG atlas.
 
 ## Export layouts
 
@@ -89,6 +105,9 @@ The compact outer-edge set uses this order:
 The runtime falls back to the closest authored mask for inner-corner configurations
 when a 9-tile set is used.
 
+When **All variations** is selected in Export, each mask's variations are placed in
+extra columns beside it. A mask with fewer variations leaves the extra columns blank.
+
 ## Keyboard shortcuts
 
 | Key | Action |
@@ -100,6 +119,7 @@ when a 9-tile set is used.
 | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Y` | Undo / redo |
 | `Ctrl/Cmd+S` | Save project file |
 | `Ctrl/Cmd+O` | Open project file |
+| `Ctrl/Cmd + wheel` | Zoom the drawing canvas |
 | `Esc` | Close modals / stop the current stroke |
 
 ## Project structure

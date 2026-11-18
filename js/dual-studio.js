@@ -25,7 +25,10 @@
         previousColor: '#6fb63a',
         brushSize: 1,
         opacity: 1,
-        wrap: true,
+        wrap: false,
+        syncEdges: true,
+        editorContext: null,
+        strokeTouched: new Map(),
         mirrorX: false,
         mirrorY: false,
         showPixelGrid: true,
@@ -86,13 +89,14 @@
                 'dsProjectName', 'dsSaveState', 'dsUndoBtn', 'dsRedoBtn', 'dsNewBtn', 'dsOpenBtn',
                 'dsSaveBtn', 'dsExportBtn', 'dsHelpBtn', 'dsToolGrid', 'dsBrushSize',
                 'dsBrushSizeLabel', 'dsBrushPresets', 'dsOpacity', 'dsOpacityLabel', 'dsWrap',
-                'dsMirrorX', 'dsMirrorY', 'dsShowPixelGrid', 'dsColorPicker', 'dsColorHex',
+                'dsMirrorX', 'dsMirrorY', 'dsShowPixelGrid', 'dsSyncEdges', 'dsColorPicker', 'dsColorHex',
                 'dsSaveColorBtn', 'dsPalette', 'dsRecentColors', 'dsAddLayerBtn', 'dsDuplicateLayerBtn',
                 'dsDeleteLayerBtn', 'dsLayerOpacityWrap', 'dsLayerOpacity', 'dsLayerOpacityLabel', 'dsLayers',
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
                 'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
+                'dsAtlasList', 'dsAtlasListCount',
                 'dsRandomMapBtn', 'dsClearMapBtn', 'dsFillMapBtn', 'dsShowAllGrids', 'dsGridList',
                 'dsAddGridBtn', 'dsGridName', 'dsGridRole', 'dsGridMode', 'dsTileSize',
                 'dsDuplicateGridBtn', 'dsDeleteGridBtn', 'dsExportLayout', 'dsExportScale',
@@ -152,6 +156,12 @@
                 els.dsOpacityLabel.textContent = `${e.target.value}%`;
             });
             els.dsWrap.addEventListener('change', (e) => this.wrap = e.target.checked);
+            els.dsSyncEdges.addEventListener('change', (e) => {
+                this.syncEdges = e.target.checked;
+                this.notify('info', this.syncEdges
+                    ? 'Edge sync on: matching edge pixels are copied into neighbouring tile variants.'
+                    : 'Edge sync off: only the selected tile changes.');
+            });
             els.dsMirrorX.addEventListener('change', (e) => this.mirrorX = e.target.checked);
             els.dsMirrorY.addEventListener('change', (e) => this.mirrorY = e.target.checked);
             els.dsShowPixelGrid.addEventListener('change', (e) => {
@@ -202,6 +212,13 @@
                 if (Number.isInteger(mask)) this.selectMask(mask);
             });
 
+            els.dsAtlasList.addEventListener('click', (e) => {
+                const row = e.target.closest('.ds-atlas-list-item');
+                if (!row || row.classList.contains('is-empty')) return;
+                const mask = parseInt(row.dataset.mask, 10);
+                if (Number.isInteger(mask)) this.selectMask(mask);
+            });
+
             // Editor canvas
             const editor = els.dsEditorCanvas;
             editor.addEventListener('pointerdown', (e) => this.onEditorPointerDown(e));
@@ -212,6 +229,11 @@
             editor.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // Tile actions
+            els.dsRefreshContextBtn.addEventListener('click', () => {
+                this.computeEditorContext(true);
+                this.renderEditor();
+                this.notify('info', 'Picked a fresh neighbour context from the test map.');
+            });
             els.dsCopyTileBtn.addEventListener('click', () => this.copyTile());
             els.dsPasteTileBtn.addEventListener('click', () => this.pasteTile());
             els.dsFlipHBtn.addEventListener('click', () => this.flipTile('h'));
@@ -493,13 +515,143 @@
            Editor drawing
            -------------------------------------------------------- */
 
+        /* --------------------------------------------------------
+           Neighbour context
+           -------------------------------------------------------- */
+
+        maskAtMap(grid, gx, gy) {
+            const get = (x, y) => {
+                if (x < 0 || y < 0 || x >= this.project.mapW || y >= this.project.mapH) return 0;
+                return grid.cells[y * this.project.mapW + x] ? 1 : 0;
+            };
+            return (get(gx - 1, gy - 1) ? 1 : 0) |
+                (get(gx, gy - 1) ? 2 : 0) |
+                (get(gx - 1, gy) ? 4 : 0) |
+                (get(gx, gy) ? 8 : 0);
+        },
+
+        contextFromMap(grid, targetMask) {
+            const matches = [];
+            for (let gy = 0; gy <= this.project.mapH; gy++) {
+                for (let gx = 0; gx <= this.project.mapW; gx++) {
+                    if (this.maskAtMap(grid, gx, gy) === targetMask) {
+                        matches.push({ gx, gy });
+                    }
+                }
+            }
+            if (!matches.length) return null;
+
+            const offset = Number(this.contextOffset) || 0;
+            const match = matches[offset % matches.length];
+            const context = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+            for (let row = -1; row <= 1; row++) {
+                for (let col = -1; col <= 1; col++) {
+                    context[row + 1][col + 1] = this.maskAtMap(grid, match.gx + col, match.gy + row);
+                }
+            }
+            return context;
+        },
+
+        syntheticContext(mask) {
+            const popcount = (value) => {
+                let v = value;
+                let count = 0;
+                while (v) {
+                    count += v & 1;
+                    v >>>= 1;
+                }
+                return count;
+            };
+
+            const logical = new Uint8Array(16);
+            const set = (x, y, value) => {
+                const ix = x + 1;
+                const iy = y + 1;
+                if (ix >= 0 && ix < 4 && iy >= 0 && iy < 4) {
+                    logical[iy * 4 + ix] = value ? 1 : 0;
+                }
+            };
+            const get = (x, y) => {
+                const ix = x + 1;
+                const iy = y + 1;
+                return ix >= 0 && ix < 4 && iy >= 0 && iy < 4 ? logical[iy * 4 + ix] : 0;
+            };
+
+            // If the tile is mostly filled, surround it with filled cells;
+            // if it is an isolated corner/edge, leave the surroundings empty.
+            const outer = popcount(mask) >= 2 ? 1 : 0;
+            for (let y = -1; y <= 2; y++) {
+                for (let x = -1; x <= 2; x++) set(x, y, outer);
+            }
+
+            set(0, 0, mask & 1);
+            set(1, 0, mask & 2);
+            set(0, 1, mask & 4);
+            set(1, 1, mask & 8);
+
+            const context = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+            for (let gy = 0; gy <= 2; gy++) {
+                for (let gx = 0; gx <= 2; gx++) {
+                    context[gy][gx] =
+                        (get(gx - 1, gy - 1) ? 1 : 0) |
+                        (get(gx, gy - 1) ? 2 : 0) |
+                        (get(gx - 1, gy) ? 4 : 0) |
+                        (get(gx, gy) ? 8 : 0);
+                }
+            }
+            return context;
+        },
+
+        computeEditorContext(force, resetOffset) {
+            const grid = this.activeGrid();
+            if (!grid) return;
+            const mask = this.selectedMask;
+
+            if (resetOffset) this.contextOffset = 0;
+            if (!force && this.editorContext &&
+                this.editorContext[1] && this.editorContext[1][1] === mask) {
+                return;
+            }
+
+            if (force && !resetOffset) {
+                this.contextOffset = (Number(this.contextOffset) || 0) + 1;
+            }
+
+            const fromMap = this.contextFromMap(grid, mask);
+            this.editorContext = fromMap || this.syntheticContext(mask);
+            // The centre is always the tile being edited.
+            this.editorContext[1][1] = mask;
+        },
+
+        pointFromGlobal(gx, gy) {
+            const size = this.tileSize();
+            const internal = size * 3;
+            if (gx < 0 || gy < 0 || gx >= internal || gy >= internal) return null;
+            if (!this.editorContext) this.computeEditorContext();
+            const cellCol = Math.floor(gx / size);
+            const cellRow = Math.floor(gy / size);
+            const x = gx - cellCol * size;
+            const y = gy - cellRow * size;
+            const mask = this.editorContext[cellRow] && this.editorContext[cellRow][cellCol] != null
+                ? this.editorContext[cellRow][cellCol]
+                : 0;
+            return { x, y, gx, gy, cellCol, cellRow, mask };
+        },
+
+        /* --------------------------------------------------------
+           Editor drawing
+           -------------------------------------------------------- */
+
         editorPoint(e) {
             const canvas = this.els.dsEditorCanvas;
             const rect = canvas.getBoundingClientRect();
             const size = this.tileSize();
-            const x = Math.floor((e.clientX - rect.left) / rect.width * size);
-            const y = Math.floor((e.clientY - rect.top) / rect.height * size);
-            return { x: Core.clamp(x, 0, size - 1), y: Core.clamp(y, 0, size - 1) };
+            const internal = size * 3;
+            let gx = Math.floor((e.clientX - rect.left) / rect.width * internal);
+            let gy = Math.floor((e.clientY - rect.top) / rect.height * internal);
+            gx = Core.clamp(gx, 0, internal - 1);
+            gy = Core.clamp(gy, 0, internal - 1);
+            return this.pointFromGlobal(gx, gy);
         },
 
         onEditorPointerDown(e) {
@@ -507,24 +659,36 @@
             e.preventDefault();
 
             const grid = this.activeGrid();
-            const tile = this.activeTile();
-            if (!grid || !tile) return;
+            if (!grid) return;
 
             const point = this.editorPoint(e);
+            if (!point) return;
             this.updateCoords(point);
+            this.strokeTouched.clear();
 
             if (this.tool === 'picker') {
                 this.pickColor(point);
                 return;
             }
 
+            if (!point.mask) {
+                this.notify('info', 'That margin cell is empty. Pick a tile that occupies it, or click Context to refresh.');
+                return;
+            }
+
             const erase = e.button === 2 || this.tool === 'eraser';
 
             if (this.tool === 'fill') {
+                const tile = grid.tiles[point.mask];
+                if (!tile) return;
                 this.beginHistory();
+                this.rememberHistoryTile(point.mask);
                 this.floodFill(tile, point, erase);
+                ['left', 'right', 'top', 'bottom'].forEach(edge => this.trackTouchedEdge(point.mask, edge === 'left' ? 0 : edge === 'right' ? this.tileSize() - 1 : point.x, edge === 'top' ? 0 : edge === 'bottom' ? this.tileSize() - 1 : point.y, this.tileSize()));
+                this.markAllEdges(point.mask);
+                this.syncTileEdges();
                 this.commitHistory();
-                this.afterTileChange();
+                this.afterMasksChanged(new Set([point.mask]));
                 this.renderLayers();
                 return;
             }
@@ -541,26 +705,27 @@
                 // Pointer capture is a convenience only.
             }
 
-            this.paintAt(point, erase);
-            this.afterTileChange();
+            const changed = new Set();
+            this.paintAt(point, erase, changed);
+            this.afterMasksChanged(changed);
         },
 
         onEditorPointerMove(e) {
             const point = this.editorPoint(e);
-            this.updateCoords(point);
+            if (point) this.updateCoords(point);
 
             if (!this.drawing || e.pointerId !== this.activePointerId) return;
-            // e.buttons can be 0 when a pointer leaves and re-enters; keep drawing
-            // while the pointer is captured and the button started the stroke.
             if (e.buttons === 0 && e.pointerType === 'mouse') return;
+            if (!point) return;
 
             if (!this.lastPoint) {
                 this.lastPoint = point;
             }
 
-            this.strokeLine(this.lastPoint, point, this.strokeErase);
+            const changed = new Set();
+            this.strokeLine(this.lastPoint, point, this.strokeErase, changed);
             this.lastPoint = point;
-            this.afterTileChange();
+            this.afterMasksChanged(changed);
         },
 
         onEditorPointerUp(e) {
@@ -568,8 +733,9 @@
             this.drawing = false;
             this.lastPoint = null;
             this.activePointerId = null;
+            this.syncTileEdges();
             this.commitHistory();
-            this.afterTileChange();
+            this.afterMasksChanged(new Set([this.selectedMask]));
             this.renderLayers();
             try {
                 this.els.dsEditorCanvas.releasePointerCapture(e.pointerId);
@@ -585,88 +751,306 @@
         },
 
         updateCoords(point) {
-            this.els.dsCoords.textContent = `${point.x}, ${point.y}`;
+            if (!point) {
+                this.els.dsCoords.textContent = '—';
+                return;
+            }
+            this.els.dsCoords.textContent = point.mask
+                ? `${point.x}, ${point.y} · tile #${point.mask}`
+                : `${point.x}, ${point.y} · empty`;
         },
 
-        strokeLine(from, to, erase) {
-            const dx = to.x - from.x;
-            const dy = to.y - from.y;
+        strokeLine(from, to, erase, changed) {
+            const dx = to.gx - from.gx;
+            const dy = to.gy - from.gy;
             const steps = Math.max(Math.abs(dx), Math.abs(dy));
             if (steps === 0) {
-                this.paintAt(to, erase);
+                this.paintAt(to, erase, changed);
                 return;
             }
             for (let i = 1; i <= steps; i++) {
-                this.paintAt({
-                    x: Math.round(from.x + dx * (i / steps)),
-                    y: Math.round(from.y + dy * (i / steps))
-                }, erase);
+                const point = this.pointFromGlobal(
+                    Math.round(from.gx + dx * (i / steps)),
+                    Math.round(from.gy + dy * (i / steps))
+                );
+                if (point) this.paintAt(point, erase, changed);
             }
         },
 
-        paintAt(point, erase) {
-            const tile = this.activeTile();
-            if (!tile) return;
-            const layer = tile.layers[tile.activeLayer];
-            if (!layer) return;
-
-            if (!erase && !layer.visible) {
-                layer.visible = true;
-            }
+        paintAt(point, erase, changed) {
+            if (!point || !point.mask) return;
+            const grid = this.activeGrid();
+            if (!grid) return;
 
             const size = this.tileSize();
-            const ctx = layer.canvas.getContext('2d');
             const brush = Core.clamp(this.brushSize, 1, 15);
             const start = -Math.floor((brush - 1) / 2);
-            const positions = new Map();
+            const positionsByMask = new Map();
 
-            const add = (x, y) => {
+            const addPosition = (mask, x, y) => {
+                if (!mask) return;
                 let px = x;
                 let py = y;
-
-                if (this.wrap) {
-                    px = ((px % size) + size) % size;
-                    py = ((py % size) + size) % size;
-                } else if (px < 0 || py < 0 || px >= size || py >= size) {
-                    return;
+                if (px < 0 || py < 0 || px >= size || py >= size) return;
+                let set = positionsByMask.get(mask);
+                if (!set) {
+                    set = new Set();
+                    positionsByMask.set(mask, set);
                 }
-
-                positions.set(`${px},${py}`, { x: px, y: py });
+                set.add(`${px},${py}`);
             };
 
-            for (let oy = start; oy < start + brush; oy++) {
-                for (let ox = start; ox < start + brush; ox++) {
-                    if (this.tool === 'brush' && brush > 1) {
-                        const radius = brush / 2;
-                        if (Math.hypot(ox, oy) > radius) continue;
+            const centres = [{ x: point.x, y: point.y, cellCol: point.cellCol, cellRow: point.cellRow }];
+            if (this.mirrorX) centres.push({ x: size - 1 - point.x, y: point.y, cellCol: point.cellCol, cellRow: point.cellRow });
+            if (this.mirrorY) centres.push({ x: point.x, y: size - 1 - point.y, cellCol: point.cellCol, cellRow: point.cellRow });
+            if (this.mirrorX && this.mirrorY) centres.push({ x: size - 1 - point.x, y: size - 1 - point.y, cellCol: point.cellCol, cellRow: point.cellRow });
+
+            centres.forEach(centre => {
+                for (let oy = start; oy < start + brush; oy++) {
+                    for (let ox = start; ox < start + brush; ox++) {
+                        if (this.tool === 'brush' && brush > 1) {
+                            const radius = brush / 2;
+                            if (Math.hypot(ox, oy) > radius) continue;
+                        }
+
+                        if (this.wrap) {
+                            const px = ((centre.x + ox) % size + size) % size;
+                            const py = ((centre.y + oy) % size + size) % size;
+                            const mask = this.editorContext[centre.cellRow][centre.cellCol];
+                            addPosition(mask, px, py);
+                        } else {
+                            const gx = centre.cellCol * size + centre.x + ox;
+                            const gy = centre.cellRow * size + centre.y + oy;
+                            const target = this.pointFromGlobal(gx, gy);
+                            if (target) addPosition(target.mask, target.x, target.y);
+                        }
                     }
-
-                    const px = point.x + ox;
-                    const py = point.y + oy;
-                    add(px, py);
-
-                    if (this.mirrorX) add(size - 1 - px, py);
-                    if (this.mirrorY) add(px, size - 1 - py);
-                    if (this.mirrorX && this.mirrorY) add(size - 1 - px, size - 1 - py);
                 }
+            });
+
+            if (!positionsByMask.size) return;
+
+            positionsByMask.forEach((positions, mask) => {
+                const tile = grid.tiles[mask];
+                if (!tile) return;
+                const layer = tile.layers[tile.activeLayer] || tile.layers[0];
+                if (!layer) return;
+
+                this.rememberHistoryTile(mask);
+
+                if (!erase && !layer.visible) layer.visible = true;
+                const ctx = layer.canvas.getContext('2d');
+
+                if (erase) {
+                    ctx.save();
+                    ctx.globalAlpha = 1;
+                    positions.forEach(key => {
+                        const [px, py] = key.split(',').map(Number);
+                        ctx.clearRect(px, py, 1, 1);
+                        this.trackTouchedEdge(mask, px, py, size);
+                    });
+                    ctx.restore();
+                } else {
+                    ctx.save();
+                    ctx.globalAlpha = Core.clamp(this.opacity, 0.01, 1);
+                    ctx.fillStyle = this.color;
+                    positions.forEach(key => {
+                        const [px, py] = key.split(',').map(Number);
+                        ctx.fillRect(px, py, 1, 1);
+                        this.trackTouchedEdge(mask, px, py, size);
+                    });
+                    ctx.restore();
+                }
+
+                changed.add(mask);
+            });
+        },
+
+        trackTouchedEdge(mask, x, y, size) {
+            if (!mask) return;
+            let entry = this.strokeTouched.get(mask);
+            if (!entry) {
+                entry = { edges: new Set(), corners: new Set() };
+                this.strokeTouched.set(mask, entry);
             }
 
-            if (erase) {
-                ctx.save();
-                ctx.globalAlpha = 1;
-                positions.forEach(pos => ctx.clearRect(pos.x, pos.y, 1, 1));
-                ctx.restore();
-            } else {
-                ctx.save();
-                ctx.globalAlpha = Core.clamp(this.opacity, 0.01, 1);
-                ctx.fillStyle = this.color;
-                positions.forEach(pos => ctx.fillRect(pos.x, pos.y, 1, 1));
-                ctx.restore();
+            const left = x === 0;
+            const right = x === size - 1;
+            const top = y === 0;
+            const bottom = y === size - 1;
+
+            if (left) entry.edges.add('left');
+            if (right) entry.edges.add('right');
+            if (top) entry.edges.add('top');
+            if (bottom) entry.edges.add('bottom');
+
+            if (left && top) entry.corners.add('tl');
+            if (right && top) entry.corners.add('tr');
+            if (left && bottom) entry.corners.add('bl');
+            if (right && bottom) entry.corners.add('br');
+        },
+
+        markAllEdges(mask) {
+            if (!mask) return;
+            let entry = this.strokeTouched.get(mask);
+            if (!entry) {
+                entry = { edges: new Set(), corners: new Set() };
+                this.strokeTouched.set(mask, entry);
             }
+            ['left', 'right', 'top', 'bottom'].forEach(edge => entry.edges.add(edge));
+            ['tl', 'tr', 'bl', 'br'].forEach(corner => entry.corners.add(corner));
+        },
+
+        syncTileEdges() {
+            if (!this.syncEdges) return;
+            if (!this.pendingHistory) return;
+            if (!this.strokeTouched.size) return;
+
+            const grid = this.activeGrid();
+            if (!grid) return;
+
+            const entries = Array.from(this.strokeTouched.entries());
+            entries.forEach(([sourceMask, info]) => {
+                if (sourceMask && (info.edges.size || info.corners.size)) {
+                    this.syncMaskEdges(grid, sourceMask, info.edges, info.corners);
+                }
+            });
+            this.strokeTouched.clear();
+        },
+
+        syncMaskEdges(grid, sourceMask, edges, corners) {
+            if (!edges.size && !corners.size) return;
+            const size = this.tileSize();
+            const source = grid.tiles[sourceMask];
+            if (!source) return;
+
+            const sourceComposite = Core.compositeTile(source, size);
+            const sourceData = sourceComposite.getContext('2d').getImageData(0, 0, size, size).data;
+            const changed = new Set();
+
+            const candidatesForEdge = (mask, edge) => {
+                let required = 0;
+                let keyMask = 0;
+                if (edge === 'right') {
+                    required = (mask & 2 ? 1 : 0) | (mask & 8 ? 4 : 0);
+                    keyMask = 1 | 4;
+                } else if (edge === 'left') {
+                    required = (mask & 1 ? 2 : 0) | (mask & 4 ? 8 : 0);
+                    keyMask = 2 | 8;
+                } else if (edge === 'top') {
+                    required = (mask & 1 ? 4 : 0) | (mask & 2 ? 8 : 0);
+                    keyMask = 4 | 8;
+                } else if (edge === 'bottom') {
+                    required = (mask & 4 ? 1 : 0) | (mask & 8 ? 2 : 0);
+                    keyMask = 1 | 2;
+                }
+                const result = [];
+                for (let candidate = 1; candidate <= 15; candidate++) {
+                    if (candidate === sourceMask) continue;
+                    if ((candidate & keyMask) === required) result.push(candidate);
+                }
+                return result;
+            };
+
+            const getSyncLayer = (tile) => {
+                let layer = tile.layers.find(item => item.name === 'Edge sync');
+                if (!layer) {
+                    layer = Core.createLayer(size, 'Edge sync');
+                    tile.layers.push(layer);
+                }
+                layer.visible = true;
+                layer.opacity = 1;
+                const index = tile.layers.indexOf(layer);
+                if (index !== -1 && index !== tile.layers.length - 1) {
+                    tile.layers.splice(index, 1);
+                    tile.layers.push(layer);
+                    tile.activeLayer = Math.min(tile.activeLayer, tile.layers.length - 1);
+                }
+                return layer;
+            };
+
+            const clearStrip = (tile, edge) => {
+                tile.layers.forEach(layer => {
+                    const ctx = layer.canvas.getContext('2d');
+                    if (edge === 'left') ctx.clearRect(0, 0, 1, size);
+                    else if (edge === 'right') ctx.clearRect(size - 1, 0, 1, size);
+                    else if (edge === 'top') ctx.clearRect(0, 0, size, 1);
+                    else if (edge === 'bottom') ctx.clearRect(0, size - 1, size, 1);
+                });
+            };
+
+            const copyEdge = (targetMask, edge) => {
+                const tile = grid.tiles[targetMask];
+                if (!tile) return;
+                this.rememberHistoryTile(targetMask);
+                clearStrip(tile, edge);
+                const layer = getSyncLayer(tile);
+                const ctx = layer.canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                if (edge === 'right') {
+                    ctx.drawImage(sourceComposite, size - 1, 0, 1, size, 0, 0, 1, size);
+                } else if (edge === 'left') {
+                    ctx.drawImage(sourceComposite, 0, 0, 1, size, size - 1, 0, 1, size);
+                } else if (edge === 'top') {
+                    ctx.drawImage(sourceComposite, 0, 0, size, 1, 0, size - 1, size, 1);
+                } else if (edge === 'bottom') {
+                    ctx.drawImage(sourceComposite, 0, size - 1, size, 1, 0, 0, size, 1);
+                }
+                changed.add(targetMask);
+            };
+
+            edges.forEach(edge => {
+                candidatesForEdge(sourceMask, edge).forEach(mask => copyEdge(mask, edge));
+            });
+
+            const cornerMap = {
+                br: { bit: 8, targetBit: 1, sx: size - 1, sy: size - 1, tx: 0, ty: 0 },
+                bl: { bit: 4, targetBit: 2, sx: 0, sy: size - 1, tx: size - 1, ty: 0 },
+                tr: { bit: 2, targetBit: 4, sx: size - 1, sy: 0, tx: 0, ty: size - 1 },
+                tl: { bit: 1, targetBit: 8, sx: 0, sy: 0, tx: size - 1, ty: size - 1 }
+            };
+
+            corners.forEach(corner => {
+                const info = cornerMap[corner];
+                if (!info) return;
+                const sourcePixel = [
+                    sourceData[(info.sy * size + info.sx) * 4],
+                    sourceData[(info.sy * size + info.sx) * 4 + 1],
+                    sourceData[(info.sy * size + info.sx) * 4 + 2],
+                    sourceData[(info.sy * size + info.sx) * 4 + 3]
+                ];
+                if (sourcePixel[3] === 0) return;
+
+                for (let candidate = 1; candidate <= 15; candidate++) {
+                    if (candidate === sourceMask) continue;
+                    if ((candidate & info.targetBit) !== (sourceMask & info.bit ? info.targetBit : 0)) continue;
+                    const tile = grid.tiles[candidate];
+                    if (!tile) continue;
+                    this.rememberHistoryTile(candidate);
+
+                    tile.layers.forEach(layer => {
+                        layer.canvas.getContext('2d').clearRect(info.tx, info.ty, 1, 1);
+                    });
+
+                    const layer = getSyncLayer(tile);
+                    const ctx = layer.canvas.getContext('2d');
+                    ctx.fillStyle = `rgba(${sourcePixel[0]}, ${sourcePixel[1]}, ${sourcePixel[2]}, ${sourcePixel[3] / 255})`;
+                    ctx.fillRect(info.tx, info.ty, 1, 1);
+                    changed.add(candidate);
+                }
+            });
+
+            if (!changed.size) return;
+            changed.forEach(mask => {
+                Core.invalidateTile(grid, mask);
+                this.refreshAtlasThumb(mask);
+            });
+            this.schedulePreview();
+            this.markDirty();
         },
 
         floodFill(tile, point, erase) {
-            const layer = tile.layers[tile.activeLayer];
+            const layer = tile.layers[tile.activeLayer] || tile.layers[0];
             if (!layer) return;
 
             const size = this.tileSize();
@@ -730,8 +1114,12 @@
 
         pickColor(point) {
             const grid = this.activeGrid();
-            const tile = this.activeTile();
-            if (!grid || !tile) return;
+            if (!grid || !point || !point.mask) {
+                this.notify('info', 'That cell is empty — there is no tile colour to pick.');
+                return;
+            }
+            const tile = grid.tiles[point.mask];
+            if (!tile) return;
             const size = this.tileSize();
             const composite = Core.compositeTile(tile, size);
             const ctx = composite.getContext('2d');
@@ -745,16 +1133,27 @@
             this.notify('info', `Picked ${hex}`);
         },
 
-        afterTileChange() {
+        afterMasksChanged(masks) {
             const grid = this.activeGrid();
-            if (!grid) return;
-            Core.invalidateTile(grid, this.selectedMask);
+            if (!grid || !masks || !masks.size) return;
+            masks.forEach(mask => {
+                if (!mask) return;
+                Core.invalidateTile(grid, mask);
+                this.refreshAtlasThumb(mask);
+            });
             this.renderEditor();
-            this.refreshAtlasThumb(this.selectedMask);
             this.schedulePreview();
             this.renderTileInfo();
             this.markDirty();
         },
+
+        afterTileChange() {
+            this.afterMasksChanged(new Set([this.selectedMask]));
+        },
+
+        /* --------------------------------------------------------
+           History
+           -------------------------------------------------------- */
 
         /* --------------------------------------------------------
            History
@@ -803,7 +1202,8 @@
             this.pendingHistory = {
                 gridId: grid.id,
                 mask: this.selectedMask,
-                before: this.snapshotTile(tile)
+                before: this.snapshotTile(tile),
+                extraBefore: new Map()
             };
         },
 
@@ -816,27 +1216,59 @@
             const tile = grid.tiles[entry.mask];
             if (!tile) return;
 
-            entry.after = this.snapshotTile(tile);
-            this.undoStack.push(entry);
+            const changes = [{
+                mask: entry.mask,
+                before: entry.before,
+                after: this.snapshotTile(tile)
+            }];
+
+            if (entry.extraBefore) {
+                entry.extraBefore.forEach((before, mask) => {
+                    if (mask === entry.mask) return;
+                    const target = grid.tiles[mask];
+                    if (!target) return;
+                    changes.push({ mask, before, after: this.snapshotTile(target) });
+                });
+            }
+
+            this.undoStack.push({
+                gridId: entry.gridId,
+                mask: entry.mask,
+                changes
+            });
             if (this.undoStack.length > 60) this.undoStack.shift();
             this.redoStack = [];
             this.updateHistoryButtons();
         },
 
+        applyHistoryEntry(entry, side) {
+            const grid = Core.getGrid(this.project, entry.gridId);
+            if (!grid) return null;
+            const changes = Array.isArray(entry.changes)
+                ? entry.changes
+                : [{ mask: entry.mask, before: entry.before, after: entry.after }];
+
+            changes.forEach(change => {
+                const tile = grid.tiles[change.mask];
+                if (!tile || !change[side]) return;
+                this.applyTileSnapshot(tile, change[side]);
+                Core.invalidateTile(grid, change.mask);
+            });
+
+            return { grid, mask: entry.mask != null ? entry.mask : changes[0].mask };
+        },
+
         undo() {
             const entry = this.undoStack.pop();
             if (!entry) return;
-            const grid = Core.getGrid(this.project, entry.gridId);
-            if (!grid) return;
-
-            this.applyTileSnapshot(grid.tiles[entry.mask], entry.before);
-            Core.invalidateTile(grid, entry.mask);
+            const restored = this.applyHistoryEntry(entry, 'before');
+            if (!restored) return;
             this.redoStack.push(entry);
 
-            this.project.activeGridId = grid.id;
-            this.selectedMask = entry.mask;
+            this.project.activeGridId = restored.grid.id;
+            this.selectedMask = restored.mask;
             this.ensureSelectedMask();
-            this.undoStack.length && this.updateHistoryButtons();
+            this.updateHistoryButtons();
             this.renderAll();
             this.markDirty();
             this.notify('info', 'Undone');
@@ -845,15 +1277,12 @@
         redo() {
             const entry = this.redoStack.pop();
             if (!entry) return;
-            const grid = Core.getGrid(this.project, entry.gridId);
-            if (!grid) return;
-
-            this.applyTileSnapshot(grid.tiles[entry.mask], entry.after);
-            Core.invalidateTile(grid, entry.mask);
+            const restored = this.applyHistoryEntry(entry, 'after');
+            if (!restored) return;
             this.undoStack.push(entry);
 
-            this.project.activeGridId = grid.id;
-            this.selectedMask = entry.mask;
+            this.project.activeGridId = restored.grid.id;
+            this.selectedMask = restored.mask;
             this.ensureSelectedMask();
             this.updateHistoryButtons();
             this.renderAll();
@@ -1083,6 +1512,7 @@
             this.ensureSelectedMask();
             this.renderProjectName();
             this.renderAtlas();
+            this.renderAtlasList();
             this.renderEditor();
             this.renderLayers();
             this.renderGridList();
@@ -1172,6 +1602,7 @@
             });
 
             this.renderAtlasMeta();
+            this.renderAtlasList();
         },
 
         renderAtlasMeta() {
@@ -1195,61 +1626,151 @@
             this.els.dsAtlasBadges.append(roleBadge, modeBadge, visBadge);
         },
 
+        renderAtlasList() {
+            const grid = this.activeGrid();
+            const list = this.els.dsAtlasList;
+            if (!grid || !list) return;
+
+            const size = this.tileSize();
+            const masks = grid.mode === 9 ? Core.MASKS_9 : Core.MASKS_15;
+            list.innerHTML = '';
+            this.els.dsAtlasListCount.textContent = String(masks.filter(mask => mask !== 0).length);
+
+            masks.forEach(mask => {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'ds-atlas-list-item';
+                row.dataset.mask = mask;
+                if (mask === 0) row.classList.add('is-empty');
+                if (mask === this.selectedMask) row.classList.add('active');
+
+                const thumbWrap = document.createElement('span');
+                thumbWrap.className = 'ds-atlas-list-thumb';
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                thumbWrap.appendChild(canvas);
+
+                const text = document.createElement('span');
+                text.className = 'ds-atlas-list-text';
+                const name = document.createElement('strong');
+                name.textContent = mask === 0 ? 'Background' : Core.MASK_SHORT[mask];
+                const sub = document.createElement('small');
+                sub.textContent = mask === 0
+                    ? 'empty / background cell'
+                    : `#${mask} · ${Core.MASK_NAMES[mask]}`;
+                text.append(name, sub);
+
+                const state = document.createElement('span');
+                state.className = 'ds-atlas-list-state';
+                const stateLabel = document.createElement('span');
+                stateLabel.className = 'ds-atlas-list-label';
+                stateLabel.textContent = mask === this.selectedMask ? 'Editing' : '';
+                state.appendChild(stateLabel);
+                if (mask !== 0) {
+                    const bits = document.createElement('span');
+                    bits.className = 'ds-atlas-list-bits';
+                    [1, 2, 4, 8].forEach(bit => {
+                        const dot = document.createElement('i');
+                        dot.className = mask & bit ? 'on' : '';
+                        bits.appendChild(dot);
+                    });
+                    state.appendChild(bits);
+                }
+
+                row.append(thumbWrap, text, state);
+                list.appendChild(row);
+
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.clearRect(0, 0, size, size);
+                if (mask === 0) {
+                    ctx.fillStyle = this.project.background || '#c99a63';
+                    ctx.fillRect(0, 0, size, size);
+                } else {
+                    const tileCanvas = Core.getTileCanvas(grid, mask);
+                    if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
+                }
+            });
+        },
+
         refreshAtlasThumb(mask) {
             const grid = this.activeGrid();
             if (!grid) return;
-            const cell = this.els.dsAtlasGrid.querySelector(`.ds-atlas-cell[data-mask="${mask}"]`);
-            if (!cell) return;
-            const canvas = cell.querySelector('canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
             const size = this.tileSize();
-            ctx.clearRect(0, 0, size, size);
-            if (mask === 0) {
-                ctx.fillStyle = this.project.background || '#c99a63';
-                ctx.fillRect(0, 0, size, size);
-            } else {
-                const tileCanvas = Core.getTileCanvas(grid, mask);
-                if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
-            }
+
+            const paint = (canvas) => {
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.clearRect(0, 0, size, size);
+                if (mask === 0) {
+                    ctx.fillStyle = this.project.background || '#c99a63';
+                    ctx.fillRect(0, 0, size, size);
+                } else {
+                    const tileCanvas = Core.getTileCanvas(grid, mask);
+                    if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
+                }
+            };
+
+            const cell = this.els.dsAtlasGrid.querySelector(`.ds-atlas-cell[data-mask="${mask}"]`);
+            if (cell) paint(cell.querySelector('canvas'));
+
+            const listRow = this.els.dsAtlasList.querySelector(`.ds-atlas-list-item[data-mask="${mask}"]`);
+            if (listRow) paint(listRow.querySelector('canvas'));
         },
 
         renderEditor() {
             const grid = this.activeGrid();
             const tile = this.activeTile();
             const size = this.tileSize();
+            const internal = size * 3;
             const canvas = this.els.dsEditorCanvas;
             const ctx = this.els.editorCtx;
 
-            if (canvas.width !== size || canvas.height !== size) {
-                canvas.width = size;
-                canvas.height = size;
+            if (canvas.width !== internal || canvas.height !== internal) {
+                canvas.width = internal;
+                canvas.height = internal;
             }
 
-            ctx.clearRect(0, 0, size, size);
+            ctx.clearRect(0, 0, internal, internal);
 
+            // 3×3 margin: the selected tile repeats around the centre so the
+            // user can draw across an edge without hitting a hard canvas limit.
             if (tile) {
                 const composite = Core.compositeTile(tile, size);
                 ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(composite, 0, 0);
+                for (let row = 0; row < 3; row++) {
+                    for (let col = 0; col < 3; col++) {
+                        ctx.drawImage(composite, col * size, row * size);
+                    }
+                }
             }
 
             if (this.showPixelGrid && size <= 64) {
                 ctx.save();
-                ctx.strokeStyle = 'rgba(235, 244, 255, 0.12)';
+                ctx.strokeStyle = 'rgba(235, 244, 255, 0.09)';
                 ctx.lineWidth = 1;
-                for (let i = 1; i < size; i++) {
+                for (let i = 1; i < internal; i++) {
                     ctx.beginPath();
                     ctx.moveTo(i + 0.5, 0);
-                    ctx.lineTo(i + 0.5, size);
+                    ctx.lineTo(i + 0.5, internal);
                     ctx.stroke();
                     ctx.beginPath();
                     ctx.moveTo(0, i + 0.5);
-                    ctx.lineTo(size, i + 0.5);
+                    ctx.lineTo(internal, i + 0.5);
                     ctx.stroke();
                 }
                 ctx.restore();
             }
+
+            // Mark the centre tile. The whole 3×3 area is drawable; strokes wrap.
+            ctx.save();
+            ctx.strokeStyle = 'rgba(67, 217, 255, 0.62)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([7, 5]);
+            ctx.strokeRect(size + 1, size + 1, size - 2, size - 2);
+            ctx.restore();
 
             this.renderTileInfo();
         },
@@ -1260,8 +1781,8 @@
 
             this.els.dsEditorTitle.textContent = `Tile #${mask} — ${Core.MASK_SHORT[mask]}`;
             this.els.dsEditorSubtitle.textContent = mask === 15
-                ? 'Fully filled tile — used in the middle of a terrain chunk.'
-                : `${Core.MASK_NAMES[mask]}. Draw the terrain in the highlighted corners.`;
+                ? 'Fully filled tile — used in the middle of a terrain chunk. The 3×3 margin wraps around the centre.'
+                : `${Core.MASK_NAMES[mask]}. The 3×3 margin wraps around the centre tile.`;
 
             this.els.dsMaskTitle.textContent = Core.MASK_NAMES[mask];
             const bits = [];
@@ -2083,6 +2604,13 @@
 
             this.els.dsAtlasGrid.querySelectorAll('.ds-atlas-cell').forEach(cell => {
                 cell.classList.toggle('active', parseInt(cell.dataset.mask, 10) === mask);
+            });
+            this.els.dsAtlasList.querySelectorAll('.ds-atlas-list-item').forEach(row => {
+                row.classList.toggle('active', parseInt(row.dataset.mask, 10) === mask);
+                const label = row.querySelector('.ds-atlas-list-label');
+                if (label) {
+                    label.textContent = parseInt(row.dataset.mask, 10) === mask ? 'Editing' : '';
+                }
             });
 
             this.renderEditor();

@@ -2823,7 +2823,7 @@
             const cell = this.previewCell(e);
             if (!cell) return;
             this.previewPainting = true;
-            this.previewValue = e.button === 2 ? 0 : 1;
+            this.previewValue = (e.button === 2 || e.shiftKey) ? 0 : 1;
             this.hoverCell = cell;
             this.paintPreviewCell(cell, this.previewValue);
             try {

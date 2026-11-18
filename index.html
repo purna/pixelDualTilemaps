@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dual Grid Studio — Dual Tilemap Creator</title>
-    <meta name="description" content="Design dual-grid tilesets with a live auto-tiled neighbour preview. Export 9-tile (3×3) or 15-tile (4×4) atlases.">
+    <meta name="description" content="Design dual-grid tilesets with a live auto-tiled neighbour preview. Export 9-tile (3×3) or 16-tile (4×4) atlases.">
     <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
     <link rel="stylesheet" href="fonts/fontawesome-free-6.5.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -312,7 +312,7 @@
                         <div class="ds-field">
                             <label for="dsGridMode">Export set</label>
                             <select id="dsGridMode">
-                                <option value="15">15 tiles · 4×4</option>
+                                <option value="15">15 masks + base · 4×4</option>
                                 <option value="9">9 tiles · 3×3</option>
                             </select>
                         </div>
@@ -346,7 +346,7 @@
                         <label for="dsExportLayout">Atlas layout</label>
                         <select id="dsExportLayout">
                             <option value="auto">Match grid set</option>
-                            <option value="15">4×4 · 15 tiles</option>
+                            <option value="15">4×4 · 16 tiles</option>
                             <option value="9">3×3 · 9 tiles</option>
                         </select>
                     </div>
@@ -392,7 +392,7 @@
                     </div>
                     <button id="dsExportJsonBtn" class="ds-btn ds-full"><i class="fas fa-code"></i> Export project JSON</button>
                     <p class="ds-hint ds-small-hint" id="dsExportHint">
-                        The 4×4 atlas contains 15 authored masks plus one background cell. The 3×3 atlas contains
+                        The 4×4 atlas contains 15 corner masks plus the editable #0 base/background fill. The 3×3 atlas contains
                         the 9 outer-edge masks. Choose All variations to add extra columns for each mask.
                     </p>
                 </section>
@@ -442,7 +442,7 @@
                     <label for="dsNewStarter">Starter</label>
                     <select id="dsNewStarter">
                         <option value="demo">Sample — meadow + inner overlay</option>
-                        <option value="blank">Blank 15-tile grid</option>
+                        <option value="blank">Blank 4×4 grid</option>
                     </select>
                 </div>
                 <p class="ds-hint">Creating a new design replaces the current autosaved work. Save the current design first if you want to keep it.</p>
@@ -488,7 +488,7 @@
                         composite.</p>
 
                     <h3><i class="fas fa-file-export"></i> 4. Export</h3>
-                    <p>Choose a 3×3 atlas (9 outer-edge masks) or a 4×4 atlas (15 masks + one background cell).
+                    <p>Choose a 3×3 atlas (9 outer-edge masks) or a 4×4 atlas (15 masks + the editable #0 base fill).
                         Set gap, margin, scale and background in the Export panel.</p>
                 </div>
                 <div>

@@ -906,6 +906,7 @@ a:hover {
 }
 
 .ds-small-hint {
+    display: block;
     padding: 0;
     border: 0;
     background: transparent;
@@ -1112,7 +1113,7 @@ a:hover {
     border-radius: 9px;
     border: 1px solid var(--line);
     background:
-        conic-gradient(from 0deg, #20243a 25%, #2a2f4a 0 50%, #20243a 0 75%, #2a2f4a 0) 0 0 / 20px 20px;
+        conic-gradient(from 0deg, #1a1e30 25%, #2a2f4a 0 50%, #1a1e30 0 75%, #2a2f4a 0) 0 0 / 12px 12px;
     overflow: hidden;
     touch-action: none;
     cursor: crosshair;

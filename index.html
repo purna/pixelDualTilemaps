@@ -97,7 +97,7 @@
                         aria-label="Brush opacity">
 
                     <div class="ds-toggle-grid">
-                        <label class="ds-toggle"><input type="checkbox" id="dsWrap"><span>Wrap brush</span></label>
+                        <label class="ds-toggle"><input type="checkbox" id="dsWrap" checked><span>Edge wrap</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsSyncEdges" checked><span>Sync edges</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsMirrorX"><span>Mirror X</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsMirrorY"><span>Mirror Y</span></label>
@@ -170,7 +170,6 @@
                                 <p id="dsEditorSubtitle" class="ds-subtitle">Draw the selected dual-grid tile.</p>
                             </div>
                             <div class="ds-head-actions">
-                                <button id="dsRefreshContextBtn" class="ds-btn ds-small" title="Pick a new neighbour context from the test map"><i class="fas fa-shuffle"></i><span>Context</span></button>
                                 <button id="dsCopyTileBtn" class="ds-btn ds-small" title="Copy this tile"><i class="fas fa-copy"></i><span>Copy</span></button>
                                 <button id="dsPasteTileBtn" class="ds-btn ds-small" title="Paste tile into this slot"><i class="fas fa-paste"></i><span>Paste</span></button>
                                 <button id="dsFlipHBtn" class="ds-btn ds-small" title="Flip horizontally"><i class="fas fa-arrows-left-right"></i></button>
@@ -198,9 +197,9 @@
                                 </div>
                                 <div class="ds-tile-info" id="dsTileInfo"></div>
                                 <p class="ds-hint ds-small-hint">
-                                    The surrounding margin is the tile repeating. Draw across it and the stroke
-                                    wraps into the centre; <strong>Sync edges</strong> also pushes the matching
-                                    edge pixels into every neighbouring tile variant.
+                                    The margin repeats the selected tile. Draw across a seam — with
+                                    <strong>Sync edges</strong> on, the matching edge is copied into every
+                                    neighbouring variant too.
                                 </p>
                             </div>
                         </div>

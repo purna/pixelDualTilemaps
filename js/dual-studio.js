@@ -25,9 +25,8 @@
         previousColor: '#6fb63a',
         brushSize: 1,
         opacity: 1,
-        wrap: false,
+        wrap: true,
         syncEdges: true,
-        editorContext: null,
         strokeTouched: new Map(),
         mirrorX: false,
         mirrorY: false,
@@ -229,11 +228,6 @@
             editor.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // Tile actions
-            els.dsRefreshContextBtn.addEventListener('click', () => {
-                this.computeEditorContext(true);
-                this.renderEditor();
-                this.notify('info', 'Picked a fresh neighbour context from the test map.');
-            });
             els.dsCopyTileBtn.addEventListener('click', () => this.copyTile());
             els.dsPasteTileBtn.addEventListener('click', () => this.pasteTile());
             els.dsFlipHBtn.addEventListener('click', () => this.flipTile('h'));
@@ -515,132 +509,21 @@
            Editor drawing
            -------------------------------------------------------- */
 
-        /* --------------------------------------------------------
-           Neighbour context
-           -------------------------------------------------------- */
-
-        maskAtMap(grid, gx, gy) {
-            const get = (x, y) => {
-                if (x < 0 || y < 0 || x >= this.project.mapW || y >= this.project.mapH) return 0;
-                return grid.cells[y * this.project.mapW + x] ? 1 : 0;
-            };
-            return (get(gx - 1, gy - 1) ? 1 : 0) |
-                (get(gx, gy - 1) ? 2 : 0) |
-                (get(gx - 1, gy) ? 4 : 0) |
-                (get(gx, gy) ? 8 : 0);
-        },
-
-        contextFromMap(grid, targetMask) {
-            const matches = [];
-            for (let gy = 0; gy <= this.project.mapH; gy++) {
-                for (let gx = 0; gx <= this.project.mapW; gx++) {
-                    if (this.maskAtMap(grid, gx, gy) === targetMask) {
-                        matches.push({ gx, gy });
-                    }
-                }
-            }
-            if (!matches.length) return null;
-
-            const offset = Number(this.contextOffset) || 0;
-            const match = matches[offset % matches.length];
-            const context = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-            for (let row = -1; row <= 1; row++) {
-                for (let col = -1; col <= 1; col++) {
-                    context[row + 1][col + 1] = this.maskAtMap(grid, match.gx + col, match.gy + row);
-                }
-            }
-            return context;
-        },
-
-        syntheticContext(mask) {
-            const popcount = (value) => {
-                let v = value;
-                let count = 0;
-                while (v) {
-                    count += v & 1;
-                    v >>>= 1;
-                }
-                return count;
-            };
-
-            const logical = new Uint8Array(16);
-            const set = (x, y, value) => {
-                const ix = x + 1;
-                const iy = y + 1;
-                if (ix >= 0 && ix < 4 && iy >= 0 && iy < 4) {
-                    logical[iy * 4 + ix] = value ? 1 : 0;
-                }
-            };
-            const get = (x, y) => {
-                const ix = x + 1;
-                const iy = y + 1;
-                return ix >= 0 && ix < 4 && iy >= 0 && iy < 4 ? logical[iy * 4 + ix] : 0;
-            };
-
-            // If the tile is mostly filled, surround it with filled cells;
-            // if it is an isolated corner/edge, leave the surroundings empty.
-            const outer = popcount(mask) >= 2 ? 1 : 0;
-            for (let y = -1; y <= 2; y++) {
-                for (let x = -1; x <= 2; x++) set(x, y, outer);
-            }
-
-            set(0, 0, mask & 1);
-            set(1, 0, mask & 2);
-            set(0, 1, mask & 4);
-            set(1, 1, mask & 8);
-
-            const context = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-            for (let gy = 0; gy <= 2; gy++) {
-                for (let gx = 0; gx <= 2; gx++) {
-                    context[gy][gx] =
-                        (get(gx - 1, gy - 1) ? 1 : 0) |
-                        (get(gx, gy - 1) ? 2 : 0) |
-                        (get(gx - 1, gy) ? 4 : 0) |
-                        (get(gx, gy) ? 8 : 0);
-                }
-            }
-            return context;
-        },
-
-        computeEditorContext(force, resetOffset) {
-            const grid = this.activeGrid();
-            if (!grid) return;
-            const mask = this.selectedMask;
-
-            if (resetOffset) this.contextOffset = 0;
-            if (!force && this.editorContext &&
-                this.editorContext[1] && this.editorContext[1][1] === mask) {
-                return;
-            }
-
-            if (force && !resetOffset) {
-                this.contextOffset = (Number(this.contextOffset) || 0) + 1;
-            }
-
-            const fromMap = this.contextFromMap(grid, mask);
-            this.editorContext = fromMap || this.syntheticContext(mask);
-            // The centre is always the tile being edited.
-            this.editorContext[1][1] = mask;
-        },
-
         pointFromGlobal(gx, gy) {
             const size = this.tileSize();
-            const internal = size * 3;
-            if (gx < 0 || gy < 0 || gx >= internal || gy >= internal) return null;
-            if (!this.editorContext) this.computeEditorContext();
-            const cellCol = Math.floor(gx / size);
-            const cellRow = Math.floor(gy / size);
-            const x = gx - cellCol * size;
-            const y = gy - cellRow * size;
-            const mask = this.editorContext[cellRow] && this.editorContext[cellRow][cellCol] != null
-                ? this.editorContext[cellRow][cellCol]
-                : 0;
-            return { x, y, gx, gy, cellCol, cellRow, mask };
+            const x = ((gx % size) + size) % size;
+            const y = ((gy % size) + size) % size;
+            return {
+                x,
+                y,
+                gx,
+                gy,
+                cellCol: Math.floor(gx / size),
+                cellRow: Math.floor(gy / size),
+                mask: this.selectedMask
+            };
         },
 
-        /* --------------------------------------------------------
-           Editor drawing
-           -------------------------------------------------------- */
 
         editorPoint(e) {
             const canvas = this.els.dsEditorCanvas;
@@ -671,24 +554,18 @@
                 return;
             }
 
-            if (!point.mask) {
-                this.notify('info', 'That margin cell is empty. Pick a tile that occupies it, or click Context to refresh.');
-                return;
-            }
+            const tile = this.activeTile();
+            if (!tile) return;
 
             const erase = e.button === 2 || this.tool === 'eraser';
 
             if (this.tool === 'fill') {
-                const tile = grid.tiles[point.mask];
-                if (!tile) return;
-                this.beginHistory();
-                this.rememberHistoryTile(point.mask);
+                this.beginHistory(this.selectedMask);
                 this.floodFill(tile, point, erase);
-                ['left', 'right', 'top', 'bottom'].forEach(edge => this.trackTouchedEdge(point.mask, edge === 'left' ? 0 : edge === 'right' ? this.tileSize() - 1 : point.x, edge === 'top' ? 0 : edge === 'bottom' ? this.tileSize() - 1 : point.y, this.tileSize()));
-                this.markAllEdges(point.mask);
+                this.markAllEdges(this.selectedMask);
                 this.syncTileEdges();
                 this.commitHistory();
-                this.afterMasksChanged(new Set([point.mask]));
+                this.afterMasksChanged(new Set([this.selectedMask]));
                 this.renderLayers();
                 return;
             }
@@ -778,92 +655,65 @@
         },
 
         paintAt(point, erase, changed) {
-            if (!point || !point.mask) return;
-            const grid = this.activeGrid();
-            if (!grid) return;
+            if (!point) return;
+            const tile = this.activeTile();
+            if (!tile) return;
+            const layer = tile.layers[tile.activeLayer] || tile.layers[0];
+            if (!layer) return;
 
             const size = this.tileSize();
             const brush = Core.clamp(this.brushSize, 1, 15);
             const start = -Math.floor((brush - 1) / 2);
-            const positionsByMask = new Map();
+            const positions = new Map();
 
-            const addPosition = (mask, x, y) => {
-                if (!mask) return;
+            const add = (x, y) => {
                 let px = x;
                 let py = y;
-                if (px < 0 || py < 0 || px >= size || py >= size) return;
-                let set = positionsByMask.get(mask);
-                if (!set) {
-                    set = new Set();
-                    positionsByMask.set(mask, set);
+                if (this.wrap) {
+                    px = ((px % size) + size) % size;
+                    py = ((py % size) + size) % size;
+                } else if (px < 0 || py < 0 || px >= size || py >= size) {
+                    return;
                 }
-                set.add(`${px},${py}`);
+                positions.set(`${px},${py}`, { x: px, y: py });
+                this.trackTouchedEdge(this.selectedMask, px, py, size);
             };
 
-            const centres = [{ x: point.x, y: point.y, cellCol: point.cellCol, cellRow: point.cellRow }];
-            if (this.mirrorX) centres.push({ x: size - 1 - point.x, y: point.y, cellCol: point.cellCol, cellRow: point.cellRow });
-            if (this.mirrorY) centres.push({ x: point.x, y: size - 1 - point.y, cellCol: point.cellCol, cellRow: point.cellRow });
-            if (this.mirrorX && this.mirrorY) centres.push({ x: size - 1 - point.x, y: size - 1 - point.y, cellCol: point.cellCol, cellRow: point.cellRow });
-
-            centres.forEach(centre => {
-                for (let oy = start; oy < start + brush; oy++) {
-                    for (let ox = start; ox < start + brush; ox++) {
-                        if (this.tool === 'brush' && brush > 1) {
-                            const radius = brush / 2;
-                            if (Math.hypot(ox, oy) > radius) continue;
-                        }
-
-                        if (this.wrap) {
-                            const px = ((centre.x + ox) % size + size) % size;
-                            const py = ((centre.y + oy) % size + size) % size;
-                            const mask = this.editorContext[centre.cellRow][centre.cellCol];
-                            addPosition(mask, px, py);
-                        } else {
-                            const gx = centre.cellCol * size + centre.x + ox;
-                            const gy = centre.cellRow * size + centre.y + oy;
-                            const target = this.pointFromGlobal(gx, gy);
-                            if (target) addPosition(target.mask, target.x, target.y);
-                        }
+            for (let oy = start; oy < start + brush; oy++) {
+                for (let ox = start; ox < start + brush; ox++) {
+                    if (this.tool === 'brush' && brush > 1) {
+                        const radius = brush / 2;
+                        if (Math.hypot(ox, oy) > radius) continue;
                     }
+
+                    const px = point.x + ox;
+                    const py = point.y + oy;
+                    add(px, py);
+                    if (this.mirrorX) add(size - 1 - px, py);
+                    if (this.mirrorY) add(px, size - 1 - py);
+                    if (this.mirrorX && this.mirrorY) add(size - 1 - px, size - 1 - py);
                 }
-            });
+            }
 
-            if (!positionsByMask.size) return;
+            if (!positions.size) return;
+            this.rememberHistoryTile(this.selectedMask);
+            if (!erase && !layer.visible) layer.visible = true;
+            const ctx = layer.canvas.getContext('2d');
 
-            positionsByMask.forEach((positions, mask) => {
-                const tile = grid.tiles[mask];
-                if (!tile) return;
-                const layer = tile.layers[tile.activeLayer] || tile.layers[0];
-                if (!layer) return;
+            if (erase) {
+                ctx.save();
+                ctx.globalAlpha = 1;
+                positions.forEach(pos => ctx.clearRect(pos.x, pos.y, 1, 1));
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.globalAlpha = Core.clamp(this.opacity, 0.01, 1);
+                ctx.fillStyle = this.color;
+                positions.forEach(pos => ctx.fillRect(pos.x, pos.y, 1, 1));
+                ctx.restore();
+            }
 
-                this.rememberHistoryTile(mask);
-
-                if (!erase && !layer.visible) layer.visible = true;
-                const ctx = layer.canvas.getContext('2d');
-
-                if (erase) {
-                    ctx.save();
-                    ctx.globalAlpha = 1;
-                    positions.forEach(key => {
-                        const [px, py] = key.split(',').map(Number);
-                        ctx.clearRect(px, py, 1, 1);
-                        this.trackTouchedEdge(mask, px, py, size);
-                    });
-                    ctx.restore();
-                } else {
-                    ctx.save();
-                    ctx.globalAlpha = Core.clamp(this.opacity, 0.01, 1);
-                    ctx.fillStyle = this.color;
-                    positions.forEach(key => {
-                        const [px, py] = key.split(',').map(Number);
-                        ctx.fillRect(px, py, 1, 1);
-                        this.trackTouchedEdge(mask, px, py, size);
-                    });
-                    ctx.restore();
-                }
-
-                changed.add(mask);
-            });
+            changed.add(this.selectedMask);
         },
 
         trackTouchedEdge(mask, x, y, size) {
@@ -983,7 +833,13 @@
                 const tile = grid.tiles[targetMask];
                 if (!tile) return;
                 this.rememberHistoryTile(targetMask);
-                clearStrip(tile, edge);
+                // The source edge is copied to the opposite edge of the
+                // neighbouring variant, so clear that destination edge.
+                const destinationEdge = edge === 'left' ? 'right'
+                    : edge === 'right' ? 'left'
+                    : edge === 'top' ? 'bottom'
+                    : 'top';
+                clearStrip(tile, destinationEdge);
                 const layer = getSyncLayer(tile);
                 const ctx = layer.canvas.getContext('2d');
                 ctx.imageSmoothingEnabled = false;
@@ -1155,10 +1011,6 @@
            History
            -------------------------------------------------------- */
 
-        /* --------------------------------------------------------
-           History
-           -------------------------------------------------------- */
-
         snapshotTile(tile) {
             return {
                 activeLayer: tile.activeLayer,
@@ -1194,17 +1046,27 @@
             tile.activeLayer = Core.clamp(snapshot.activeLayer || 0, 0, tile.layers.length - 1);
         },
 
-        beginHistory() {
+        beginHistory(primaryMask) {
             const grid = this.activeGrid();
             if (!grid) return;
-            const tile = grid.tiles[this.selectedMask];
-            if (!tile) return;
             this.pendingHistory = {
                 gridId: grid.id,
-                mask: this.selectedMask,
-                before: this.snapshotTile(tile),
-                extraBefore: new Map()
+                firstMask: null,
+                before: new Map()
             };
+            if (primaryMask != null) this.rememberHistoryTile(primaryMask);
+        },
+
+        rememberHistoryTile(mask) {
+            if (!this.pendingHistory) return;
+            if (!mask) return;
+            if (this.pendingHistory.before.has(mask)) return;
+            const grid = Core.getGrid(this.project, this.pendingHistory.gridId);
+            if (!grid) return;
+            const tile = grid.tiles[mask];
+            if (!tile) return;
+            this.pendingHistory.before.set(mask, this.snapshotTile(tile));
+            if (this.pendingHistory.firstMask == null) this.pendingHistory.firstMask = mask;
         },
 
         commitHistory() {
@@ -1213,27 +1075,18 @@
             this.pendingHistory = null;
             const grid = Core.getGrid(this.project, entry.gridId);
             if (!grid) return;
-            const tile = grid.tiles[entry.mask];
-            if (!tile) return;
 
-            const changes = [{
-                mask: entry.mask,
-                before: entry.before,
-                after: this.snapshotTile(tile)
-            }];
-
-            if (entry.extraBefore) {
-                entry.extraBefore.forEach((before, mask) => {
-                    if (mask === entry.mask) return;
-                    const target = grid.tiles[mask];
-                    if (!target) return;
-                    changes.push({ mask, before, after: this.snapshotTile(target) });
-                });
-            }
+            const changes = [];
+            entry.before.forEach((before, mask) => {
+                const tile = grid.tiles[mask];
+                if (!tile) return;
+                changes.push({ mask, before, after: this.snapshotTile(tile) });
+            });
+            if (!changes.length) return;
 
             this.undoStack.push({
                 gridId: entry.gridId,
-                mask: entry.mask,
+                mask: entry.firstMask != null ? entry.firstMask : this.selectedMask,
                 changes
             });
             if (this.undoStack.length > 60) this.undoStack.shift();
@@ -1326,7 +1179,7 @@
             const tile = this.activeTile();
             if (!grid || !tile) return;
 
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             const targetSize = this.tileSize();
             const sourceSize = this.clipboardTile.size || targetSize;
 
@@ -1361,7 +1214,7 @@
             const tile = this.activeTile();
             if (!tile) return;
 
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             const size = this.tileSize();
             tile.layers.forEach(layer => {
                 const canvas = Core.makeCanvas(size, size);
@@ -1388,7 +1241,7 @@
         clearTile() {
             const tile = this.activeTile();
             if (!tile) return;
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             tile.layers.forEach(layer => {
                 layer.canvas.getContext('2d').clearRect(0, 0, layer.canvas.width, layer.canvas.height);
             });
@@ -1405,7 +1258,7 @@
         addLayer() {
             const tile = this.activeTile();
             if (!tile) return;
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             const layer = Core.createLayer(this.tileSize(), `Layer ${tile.layers.length + 1}`);
             tile.layers.push(layer);
             tile.activeLayer = tile.layers.length - 1;
@@ -1420,7 +1273,7 @@
             const source = tile.layers[tile.activeLayer];
             if (!source) return;
 
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             const canvas = Core.makeCanvas(source.canvas.width, source.canvas.height);
             canvas.getContext('2d').drawImage(source.canvas, 0, 0);
             const layer = {
@@ -1444,7 +1297,7 @@
                 this.notify('info', 'A tile needs at least one layer');
                 return;
             }
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             tile.layers.splice(tile.activeLayer, 1);
             tile.activeLayer = Core.clamp(tile.activeLayer, 0, tile.layers.length - 1);
             this.commitHistory();
@@ -1487,7 +1340,7 @@
             if (value == null) return;
             const trimmed = value.trim();
             if (!trimmed) return;
-            this.beginHistory();
+            this.beginHistory(this.selectedMask);
             layer.name = trimmed.slice(0, 40);
             this.commitHistory();
             this.renderLayers();
@@ -1721,7 +1574,6 @@
         },
 
         renderEditor() {
-            const grid = this.activeGrid();
             const tile = this.activeTile();
             const size = this.tileSize();
             const internal = size * 3;
@@ -1735,8 +1587,8 @@
 
             ctx.clearRect(0, 0, internal, internal);
 
-            // 3×3 margin: the selected tile repeats around the centre so the
-            // user can draw across an edge without hitting a hard canvas limit.
+            // 3×3 margin: repeat the selected tile so strokes can cross a seam
+            // and so wrapping/clipping is visible in context.
             if (tile) {
                 const composite = Core.compositeTile(tile, size);
                 ctx.imageSmoothingEnabled = false;
@@ -1764,7 +1616,7 @@
                 ctx.restore();
             }
 
-            // Mark the centre tile. The whole 3×3 area is drawable; strokes wrap.
+            // Mark the centre tile.
             ctx.save();
             ctx.strokeStyle = 'rgba(67, 217, 255, 0.62)';
             ctx.lineWidth = 2;
@@ -1781,8 +1633,8 @@
 
             this.els.dsEditorTitle.textContent = `Tile #${mask} — ${Core.MASK_SHORT[mask]}`;
             this.els.dsEditorSubtitle.textContent = mask === 15
-                ? 'Fully filled tile — used in the middle of a terrain chunk. The 3×3 margin wraps around the centre.'
-                : `${Core.MASK_NAMES[mask]}. The 3×3 margin wraps around the centre tile.`;
+                ? 'Fully filled tile — used in the middle of a terrain chunk. The 3×3 margin repeats the tile so you can draw across seams.'
+                : `${Core.MASK_NAMES[mask]}. The 3×3 margin repeats the tile so you can draw across seams; Edge wrap keeps strokes continuous.`;
 
             this.els.dsMaskTitle.textContent = Core.MASK_NAMES[mask];
             const bits = [];

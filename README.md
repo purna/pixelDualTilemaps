@@ -93,8 +93,8 @@ outer-edge terrains.
    below the editor.
 5. Use **New variation** to make alternate art for the selected mask. The preview mixes
    variations; **Export → Variations → All variations** exports them as extra columns.
-6. Paint the test map with left-click (fill) and right-click (empty) to try different
-   neighbour arrangements.
+6. Paint the test map with left-click (fill), right-click (empty), or **Shift-click /
+   Shift-drag** to remove tiles, to try different neighbour arrangements.
 7. Use **Export active grid** for a PNG atlas.
 
 ## Export layouts

@@ -33,6 +33,8 @@ outer-edge terrains.
   tile that connects in that direction. Painting a margin seam edits that neighbour and
   syncs the shared edge back into the centre and every other compatible tile.
 - **Zoomable canvas** — `−` / `+` / `Fit` controls, or `Ctrl/⌘ + wheel` over the editor.
+- **Resizable center panels** — drag the splitter between the Tile Atlas and Tile
+  Editor to make either side wider or narrower. Double-click it to reset the split.
 - **Centre border toggle** — a thin solid border marks the centre tile and can be
   switched off when it gets in the way.
 - **Tile variations** — every mask can have several variations. Duplicate the active
@@ -46,8 +48,9 @@ outer-edge terrains.
   its own tile atlas and test map. Roles (`outer`, `custom`, `inner`) control the preview
   order so an outer terrain can sit beneath an inner overlay.
 - **Layers per tile** — add, duplicate, hide, rename and set opacity on tile layers.
-- **Pixel tools** — pencil, brush, eraser, flood fill and eyedropper, with brush size,
-  opacity, edge-wrap drawing, mirror X/Y and a pixel-grid overlay.
+- **Pixel tools** — pencil, brush, eraser, spray can, flood fill and eyedropper, with
+  brush size, opacity, edge-wrap drawing, mirror X/Y and a pixel-grid overlay. The
+  spray can scatters pixels with an ordered-dither pattern; opacity controls its density.
 - **Seam sync** — with **Sync edges** on, drawing an edge copies it into every compatible
   neighbouring mask and every variation, so the atlas stays seamless automatically.
 - **Undo / redo** for tile edits, sync changes and layer operations, including the
@@ -121,7 +124,7 @@ extra columns beside it. A mask with fewer variations leaves the extra columns b
 
 | Key | Action |
 | --- | --- |
-| `P` / `B` / `E` / `G` / `I` | Pencil / Brush / Eraser / Fill / Picker |
+| `P` / `B` / `S` / `E` / `G` / `I` | Pencil / Brush / Spray / Eraser / Fill / Picker |
 | `1`–`9` | Select an atlas slot |
 | `[` / `]` | Decrease / increase brush size |
 | `X` | Swap to the previous colour |

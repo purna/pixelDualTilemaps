@@ -9,6 +9,14 @@
     const Notifications = window.Notifications;
     const PALETTE_KEY = 'pixelDualTilemaps:dual-studio:palette:v2';
     const RECENT_KEY = 'pixelDualTilemaps:dual-studio:recent:v2';
+    const SPLIT_KEY = 'pixelDualTilemaps:dual-studio:center-split:v1';
+    const SPLITTER_WIDTH = 14;
+    const BAYER_4 = [
+        [0, 8, 2, 10],
+        [12, 4, 14, 6],
+        [3, 11, 1, 9],
+        [15, 7, 13, 5]
+    ];
 
     const NEIGHBOURS = [
         { key: 'tl', label: 'Top-left', col: -1, row: -1, pairs: [[1, 8]] },
@@ -45,6 +53,10 @@
         mirrorY: false,
         showPixelGrid: true,
         showAllGrids: true,
+        panelSplitRatio: 0.43,
+        splitDrag: null,
+        splitFrame: null,
+        sprayTick: 0,
         neighbourChoices: {},
         neighbourPicker: null,
         palette: DEFAULT_PALETTE.slice(),
@@ -79,6 +91,7 @@
 
             this.loadPalette();
             this.loadRecent();
+            this.loadPanelSplit();
             this.bindEvents();
 
             const loaded = await this.loadAutosave();
@@ -91,6 +104,7 @@
             this.renderAll();
             this.setEditorZoom(this.editorZoom);
             this.updateCenterOutline();
+            requestAnimationFrame(() => this.applyCenterSplit());
             this.updateHistoryButtons();
             this.updateFooter();
             if (!loaded) {
@@ -112,6 +126,7 @@
                 'dsDeleteLayerBtn', 'dsLayerOpacityWrap', 'dsLayerOpacity', 'dsLayerOpacityLabel', 'dsLayers',
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
                 'dsCanvasWrap', 'dsCenterOutline', 'dsNeighbourLabels',
+                'dsCenterScroll', 'dsCenterSplitter',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
                 'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
@@ -161,6 +176,56 @@
                 const button = e.target.closest('.ds-tool');
                 if (!button) return;
                 this.setTool(button.dataset.tool);
+            });
+
+            // Resizable center panels
+            const splitter = els.dsCenterSplitter;
+            splitter.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                this.splitDrag = e.pointerId;
+                splitter.classList.add('dragging');
+                document.body.classList.add('ds-resizing');
+                try { splitter.setPointerCapture(e.pointerId); } catch (error) { /* ignore */ }
+                this.resizeCenterSplit(e.clientX);
+            });
+            splitter.addEventListener('pointermove', (e) => {
+                if (this.splitDrag !== e.pointerId) return;
+                this.resizeCenterSplit(e.clientX);
+            });
+            const endSplit = (e) => {
+                if (this.splitDrag !== e.pointerId) return;
+                this.splitDrag = null;
+                splitter.classList.remove('dragging');
+                document.body.classList.remove('ds-resizing');
+                this.savePanelSplit();
+                try { splitter.releasePointerCapture(e.pointerId); } catch (error) { /* ignore */ }
+            };
+            splitter.addEventListener('pointerup', endSplit);
+            splitter.addEventListener('pointercancel', endSplit);
+            splitter.addEventListener('lostpointercapture', () => {
+                this.splitDrag = null;
+                splitter.classList.remove('dragging');
+                document.body.classList.remove('ds-resizing');
+            });
+            splitter.addEventListener('dblclick', () => {
+                this.panelSplitRatio = 0.43;
+                this.savePanelSplit();
+                this.applyCenterSplit();
+            });
+            splitter.addEventListener('keydown', (e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                e.preventDefault();
+                this.panelSplitRatio = Core.clamp(this.panelSplitRatio + (e.key === 'ArrowLeft' ? -0.03 : 0.03), 0.2, 0.8);
+                this.savePanelSplit();
+                this.applyCenterSplit();
+            });
+            window.addEventListener('resize', () => {
+                if (this.splitFrame) return;
+                this.splitFrame = requestAnimationFrame(() => {
+                    this.splitFrame = null;
+                    this.applyCenterSplit();
+                });
             });
 
             // Brush
@@ -619,6 +684,69 @@
             this.els.dsCenterOutline.style.display = this.showCenterBorder ? 'block' : 'none';
         },
 
+        loadPanelSplit() {
+            try {
+                const stored = parseFloat(localStorage.getItem(SPLIT_KEY));
+                if (Number.isFinite(stored)) this.panelSplitRatio = Core.clamp(stored, 0.2, 0.8);
+            } catch (error) {
+                this.panelSplitRatio = 0.43;
+            }
+        },
+
+        savePanelSplit() {
+            try {
+                localStorage.setItem(SPLIT_KEY, String(this.panelSplitRatio));
+            } catch (error) {
+                // A full storage quota should not break resizing.
+            }
+        },
+
+        centerSplitLimits() {
+            const scroll = this.els.dsCenterScroll;
+            if (!scroll) return null;
+            const style = window.getComputedStyle(scroll);
+            const paddingLeft = parseFloat(style.paddingLeft) || 0;
+            const paddingRight = parseFloat(style.paddingRight) || 0;
+            const contentWidth = Math.max(1, scroll.clientWidth - paddingLeft - paddingRight);
+            const available = Math.max(1, contentWidth - SPLITTER_WIDTH);
+            const atlasMin = Math.min(280, available * 0.4);
+            const editorMin = Math.min(340, available * 0.42);
+            let min = atlasMin / available;
+            let max = 1 - editorMin / available;
+            if (min >= max) {
+                min = 0.24;
+                max = 0.76;
+            }
+            return { available, min, max };
+        },
+
+        applyCenterSplit() {
+            const scroll = this.els.dsCenterScroll;
+            if (!scroll) return;
+            if (!window.matchMedia('(min-width: 1100px)').matches) {
+                scroll.style.gridTemplateColumns = '';
+                return;
+            }
+            const limits = this.centerSplitLimits();
+            if (!limits) return;
+            const ratio = Core.clamp(this.panelSplitRatio, limits.min, limits.max);
+            const atlasWidth = Math.max(1, Math.round(limits.available * ratio));
+            scroll.style.gridTemplateColumns = `${atlasWidth}px ${SPLITTER_WIDTH}px minmax(0, 1fr)`;
+        },
+
+        resizeCenterSplit(clientX) {
+            const scroll = this.els.dsCenterScroll;
+            if (!scroll) return;
+            const limits = this.centerSplitLimits();
+            if (!limits) return;
+            const rect = scroll.getBoundingClientRect();
+            const style = window.getComputedStyle(scroll);
+            const paddingLeft = parseFloat(style.paddingLeft) || 0;
+            const relative = clientX - rect.left - paddingLeft - SPLITTER_WIDTH / 2;
+            this.panelSplitRatio = Core.clamp(relative / limits.available, limits.min, limits.max);
+            this.applyCenterSplit();
+        },
+
         setEditorZoom(value) {
             this.editorZoom = Core.clamp(Number(value) || 1, 1, 8);
             const percent = Math.round(this.editorZoom * 100);
@@ -851,19 +979,41 @@
                 this.trackTouchedEdge(mask, px, py, size);
             };
 
-            for (let oy = start; oy < start + brush; oy++) {
-                for (let ox = start; ox < start + brush; ox++) {
-                    if (this.tool === 'brush' && brush > 1) {
-                        const radius = brush / 2;
-                        if (Math.hypot(ox, oy) > radius) continue;
-                    }
-
-                    const px = point.x + ox;
-                    const py = point.y + oy;
+            if (this.tool === 'spray') {
+                // Airbrush/dither spray: throw candidate pixels inside a circular
+                // radius and keep them with an ordered-dither + hash threshold.
+                const radius = Math.max(2.2, brush * 0.85);
+                const density = Core.clamp(this.opacity, 0.05, 1);
+                const count = Math.min(320, Math.max(18, Math.round(Math.PI * radius * radius * 1.8)));
+                const tick = this.sprayTick++;
+                for (let i = 0; i < count; i++) {
+                    const angle = Core.hash(i + 1, tick, 17) * Math.PI * 2;
+                    const distance = Math.sqrt(Core.hash(i + 41, tick, 71)) * radius;
+                    const px = point.x + Math.round(Math.cos(angle) * distance);
+                    const py = point.y + Math.round(Math.sin(angle) * distance);
+                    const bayer = (BAYER_4[py & 3][px & 3] + 0.5) / 16;
+                    const threshold = bayer * 0.55 + Core.hash(px, py, tick + 131) * 0.45;
+                    if (threshold > density) continue;
                     add(px, py);
                     if (this.mirrorX) add(size - 1 - px, py);
                     if (this.mirrorY) add(px, size - 1 - py);
                     if (this.mirrorX && this.mirrorY) add(size - 1 - px, size - 1 - py);
+                }
+            } else {
+                for (let oy = start; oy < start + brush; oy++) {
+                    for (let ox = start; ox < start + brush; ox++) {
+                        if (this.tool === 'brush' && brush > 1) {
+                            const radius = brush / 2;
+                            if (Math.hypot(ox, oy) > radius) continue;
+                        }
+
+                        const px = point.x + ox;
+                        const py = point.y + oy;
+                        add(px, py);
+                        if (this.mirrorX) add(size - 1 - px, py);
+                        if (this.mirrorY) add(px, size - 1 - py);
+                        if (this.mirrorX && this.mirrorY) add(size - 1 - px, size - 1 - py);
+                    }
                 }
             }
 
@@ -2909,6 +3059,9 @@
                 e.preventDefault();
             } else if (key === 'b') {
                 this.setTool('brush');
+                e.preventDefault();
+            } else if (key === 's') {
+                this.setTool('spray');
                 e.preventDefault();
             } else if (key === 'e') {
                 this.setTool('eraser');

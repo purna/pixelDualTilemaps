@@ -68,6 +68,9 @@
                         <button class="ds-tool" data-tool="fill" title="Fill (G)">
                             <i class="fas fa-fill-drip"></i><span>Fill</span>
                         </button>
+                        <button class="ds-tool" data-tool="spray" title="Spray can — dithered speckle (S)">
+                            <i class="fas fa-spray-can-sparkles"></i><span>Spray</span>
+                        </button>
                         <button class="ds-tool" data-tool="picker" title="Color picker (I)">
                             <i class="fas fa-eye-dropper"></i><span>Picker</span>
                         </button>
@@ -144,7 +147,7 @@
 
             <!-- ---------- CENTER ---------- -->
             <section class="ds-center">
-                <div class="ds-center-scroll">
+                <div class="ds-center-scroll" id="dsCenterScroll">
 
                     <!-- Tile atlas -->
                     <section class="ds-card ds-atlas-card">
@@ -162,6 +165,10 @@
                             when neighbouring cells are filled or empty.
                         </p>
                     </section>
+
+                    <div id="dsCenterSplitter" class="ds-center-splitter" role="separator"
+                        aria-orientation="vertical" aria-label="Resize atlas and editor panels"
+                        title="Drag to resize the atlas and editor. Double-click to reset." tabindex="0"></div>
 
                     <!-- Tile editor -->
                     <section class="ds-card ds-editor-card">
@@ -477,7 +484,10 @@
                         <strong>#0</strong> is the editable base/background fill (the sample uses brown dirt).</p>
                     <p>Use the <strong>Variations</strong> bar to create alternate art for the same mask.
                         The live preview picks variations stably by map position, and edge sync keeps every
-                        variation seamless.</p>
+                        variation seamless. The <strong>Spray</strong> tool scatters a dithered speckle;
+                        opacity controls its density.</p>
+                    <p>Drag the splitter between the Tile Atlas and Tile Editor to resize the two center
+                        panels, then double-click the splitter to reset them.</p>
 
                     <h3><i class="fas fa-wand-magic-sparkles"></i> 2. Test neighbours</h3>
                     <p>The editor shows the centre tile at full size with compatible neighbours around it
@@ -504,11 +514,12 @@
                     <h3><i class="fas fa-keyboard"></i> Shortcuts</h3>
                     <div class="ds-shortcuts">
                         <span><kbd>P</kbd> Pencil</span><span><kbd>B</kbd> Brush</span>
-                        <span><kbd>E</kbd> Eraser</span><span><kbd>G</kbd> Fill</span>
-                        <span><kbd>I</kbd> Picker</span><span><kbd>1–9</kbd> Pick tile</span>
+                        <span><kbd>S</kbd> Spray</span><span><kbd>E</kbd> Eraser</span>
+                        <span><kbd>G</kbd> Fill</span><span><kbd>I</kbd> Picker</span>
+                        <span><kbd>1–9</kbd> Pick tile</span><span><kbd>[</kbd> / <kbd>]</kbd> Brush size</span>
                         <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> Undo</span><span><kbd>Ctrl</kbd>+<kbd>Y</kbd> Redo</span>
                         <span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span><span><kbd>Ctrl</kbd>+<kbd>O</kbd> Open</span>
-                        <span><kbd>[</kbd> / <kbd>]</kbd> Brush size</span><span><kbd>X</kbd> Swap colour</span>
+                        <span><kbd>X</kbd> Swap colour</span><span><kbd>Dbl-click splitter</kbd> Reset panels</span>
                     </div>
 
                     <h3><i class="fas fa-circle-info"></i> Export layouts</h3>

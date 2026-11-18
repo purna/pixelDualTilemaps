@@ -1147,7 +1147,7 @@
             const mask = point.mask;
             const tile = grid && grid.tiles[mask];
             if (!tile) return;
-            const layer = tile.layers[tile.activeLayer] || tile.layers[0];
+            const layer = this.paintLayer(tile);
             if (!layer) return;
 
             const size = this.tileSize();
@@ -1342,6 +1342,12 @@
                 layer.visible = true;
                 layer.opacity = 1;
                 tile.activeLayer = Core.clamp(tile.activeLayer || 0, 0, tile.layers.length - 1);
+                // Never leave the cache layer as the paint target: clearing its
+                // edge after a stroke would punch a transparent line through it.
+                if (tile.layers[tile.activeLayer] === layer) {
+                    const drawable = tile.layers.findIndex(item => item !== layer && !item.system);
+                    tile.activeLayer = drawable >= 0 ? drawable : tile.activeLayer;
+                }
                 return layer;
             };
 
@@ -1398,6 +1404,9 @@
 
             const clearSyncStrip = (edge) => {
                 if (!sourceSync) return;
+                // If the cache layer is the active layer (for example from an
+                // older saved project), clearing it would erase the stroke.
+                if (source.layers[source.activeLayer] === sourceSync) return;
                 const ctx = sourceSync.canvas.getContext('2d');
                 if (edge === 'left') ctx.clearRect(0, 0, 1, size);
                 else if (edge === 'right') ctx.clearRect(size - 1, 0, 1, size);
@@ -1407,6 +1416,7 @@
 
             const clearSyncCorner = (x, y) => {
                 if (!sourceSync) return;
+                if (source.layers[source.activeLayer] === sourceSync) return;
                 sourceSync.canvas.getContext('2d').clearRect(x, y, 1, 1);
             };
 
@@ -1538,8 +1548,21 @@
             this.markDirty();
         },
 
+        paintLayer(tile) {
+            const layers = (tile && tile.layers) || [];
+            let layer = layers[tile.activeLayer] || layers[0];
+            if (layer && layer.system) {
+                const drawable = layers.find(item => !item.system);
+                if (drawable) {
+                    layer = drawable;
+                    tile.activeLayer = layers.indexOf(drawable);
+                }
+            }
+            return layer;
+        },
+
         floodFill(tile, point, erase) {
-            const layer = tile.layers[tile.activeLayer] || tile.layers[0];
+            const layer = this.paintLayer(tile);
             if (!layer) return;
 
             const size = this.tileSize();

@@ -11,12 +11,6 @@
     const RECENT_KEY = 'pixelDualTilemaps:dual-studio:recent:v2';
     const SPLIT_KEY = 'pixelDualTilemaps:dual-studio:center-split:v1';
     const SPLITTER_WIDTH = 14;
-    const BAYER_4 = [
-        [0, 8, 2, 10],
-        [12, 4, 14, 6],
-        [3, 11, 1, 9],
-        [15, 7, 13, 5]
-    ];
 
     const NEIGHBOURS = [
         { key: 'tl', label: 'Top-left', col: -1, row: -1, pairs: [[1, 8]] },
@@ -56,7 +50,15 @@
         panelSplitRatio: 0.43,
         splitDrag: null,
         splitFrame: null,
+        centerTab: 'editor',
+        editorFocus: false,
+        previewFocus: false,
         sprayTick: 0,
+        sprayDensity: 0.5,
+        sprayVariation: 0.5,
+        sprayUsePalette: false,
+        sprayTimer: null,
+        sprayPoint: null,
         neighbourChoices: {},
         neighbourPicker: null,
         palette: DEFAULT_PALETTE.slice(),
@@ -126,7 +128,10 @@
                 'dsDeleteLayerBtn', 'dsLayerOpacityWrap', 'dsLayerOpacity', 'dsLayerOpacityLabel', 'dsLayers',
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
                 'dsCanvasWrap', 'dsCenterOutline', 'dsNeighbourLabels',
-                'dsCenterScroll', 'dsCenterSplitter',
+                'dsCenterScroll', 'dsCenterSplitter', 'dsCenterTabs', 'dsEditorFocusBtn',
+                'dsPreviewExpandBtn', 'dsPreviewExportTilesetBtn', 'dsPreviewExportRulesBtn',
+                'dsSprayOptions', 'dsSprayDensity', 'dsSprayDensityLabel', 'dsSprayVariation',
+                'dsSprayVariationLabel', 'dsSprayPalette', 'dsApp',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
                 'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
@@ -228,6 +233,17 @@
                 });
             });
 
+            // Center workspace tabs
+            els.dsCenterTabs.addEventListener('click', (e) => {
+                const tab = e.target.closest('[data-center-tab]');
+                if (!tab) return;
+                this.selectCenterTab(tab.dataset.centerTab);
+            });
+            els.dsEditorFocusBtn.addEventListener('click', () => this.toggleEditorFocus());
+            els.dsPreviewExpandBtn.addEventListener('click', () => this.togglePreviewFocus());
+            els.dsPreviewExportTilesetBtn.addEventListener('click', () => this.exportPreviewTileset());
+            els.dsPreviewExportRulesBtn.addEventListener('click', () => this.exportPreviewRules());
+
             // Brush
             els.dsBrushSize.addEventListener('input', (e) => this.setBrushSize(parseInt(e.target.value, 10)));
             els.dsBrushPresets.addEventListener('click', (e) => {
@@ -238,6 +254,17 @@
             els.dsOpacity.addEventListener('input', (e) => {
                 this.opacity = parseInt(e.target.value, 10) / 100;
                 els.dsOpacityLabel.textContent = `${e.target.value}%`;
+            });
+            els.dsSprayDensity.addEventListener('input', (e) => {
+                this.sprayDensity = parseInt(e.target.value, 10) / 100;
+                els.dsSprayDensityLabel.textContent = `${e.target.value}%`;
+            });
+            els.dsSprayVariation.addEventListener('input', (e) => {
+                this.sprayVariation = parseInt(e.target.value, 10) / 100;
+                els.dsSprayVariationLabel.textContent = `${e.target.value}%`;
+            });
+            els.dsSprayPalette.addEventListener('change', (e) => {
+                this.sprayUsePalette = e.target.checked;
             });
             els.dsWrap.addEventListener('change', (e) => this.wrap = e.target.checked);
             els.dsSyncEdges.addEventListener('change', (e) => {
@@ -766,12 +793,60 @@
             }
         },
 
+        selectCenterTab(tab) {
+            this.centerTab = tab === 'preview' ? 'preview' : 'editor';
+            this.els.dsCenterScroll.dataset.centerTab = this.centerTab;
+            this.els.dsCenterTabs.querySelectorAll('[data-center-tab]').forEach(button => {
+                const active = button.dataset.centerTab === this.centerTab;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            this.els.dsEditorFocusBtn.classList.toggle('hidden', this.centerTab !== 'editor');
+            if (this.centerTab === 'editor') {
+                requestAnimationFrame(() => this.applyCenterSplit());
+            } else {
+                this.setPreviewFocus(false);
+            }
+            this.renderPreview();
+        },
+
+        toggleEditorFocus() {
+            this.editorFocus = !this.editorFocus;
+            this.els.dsCenterScroll.classList.toggle('is-editor-focus', this.editorFocus);
+            this.els.dsEditorFocusBtn.classList.toggle('active', this.editorFocus);
+            const label = this.els.dsEditorFocusBtn.querySelector('span');
+            if (label) label.textContent = this.editorFocus ? 'Show atlas' : 'Focus editor';
+            this.els.dsEditorFocusBtn.title = this.editorFocus
+                ? 'Restore the tile atlas and the panel split'
+                : 'Expand the tile editor and minimise the atlas';
+            if (!this.editorFocus) requestAnimationFrame(() => this.applyCenterSplit());
+        },
+
+        setPreviewFocus(enabled) {
+            this.previewFocus = !!enabled;
+            if (this.els.dsApp) this.els.dsApp.classList.toggle('ds-preview-focus', this.previewFocus);
+            const label = this.els.dsPreviewExpandBtn.querySelector('span');
+            if (label) label.textContent = this.previewFocus ? 'Restore' : 'Expand';
+            this.els.dsPreviewExpandBtn.classList.toggle('active', this.previewFocus);
+            this.els.dsPreviewExpandBtn.title = this.previewFocus
+                ? 'Restore the side panels'
+                : 'Expand the preview area across the whole workspace';
+        },
+
+        togglePreviewFocus() {
+            this.setPreviewFocus(!this.previewFocus);
+        },
+
         setTool(tool) {
             this.tool = tool;
+            if (tool !== 'spray') this.stopSpray();
             this.els.dsToolGrid.querySelectorAll('.ds-tool').forEach(button => {
                 button.classList.toggle('active', button.dataset.tool === tool);
             });
             this.els.dsEditorCanvas.style.cursor = tool === 'picker' ? 'copy' : 'crosshair';
+            if (this.els.dsSprayOptions) {
+                this.els.dsSprayOptions.classList.toggle('hidden', tool !== 'spray');
+            }
         },
 
         setBrushSize(size) {
@@ -884,6 +959,10 @@
             const changed = new Set();
             this.paintAt(point, erase, changed);
             this.afterMasksChanged(changed);
+            if (this.tool === 'spray') {
+                this.sprayPoint = point;
+                this.startSpray();
+            }
         },
 
         onEditorPointerMove(e) {
@@ -901,6 +980,7 @@
             const changed = new Set();
             this.strokeLine(this.lastPoint, point, this.strokeErase, changed);
             this.lastPoint = point;
+            if (this.tool === 'spray') this.sprayPoint = point;
             this.afterMasksChanged(changed);
         },
 
@@ -909,6 +989,8 @@
             this.drawing = false;
             this.lastPoint = null;
             this.activePointerId = null;
+            this.sprayPoint = null;
+            this.stopSpray();
             this.syncTileEdges();
             this.commitHistory();
             this.afterMasksChanged(new Set([this.selectedMask]));
@@ -933,6 +1015,22 @@
             }
             const suffix = point.direction ? ` · neighbour ${point.direction}` : '';
             this.els.dsCoords.textContent = `${point.x}, ${point.y} · tile #${point.mask}${suffix}`;
+        },
+
+        startSpray() {
+            if (this.sprayTimer) return;
+            this.sprayTimer = setInterval(() => {
+                if (!this.drawing || this.tool !== 'spray' || !this.sprayPoint) return;
+                const changed = new Set();
+                this.paintAt(this.sprayPoint, this.strokeErase, changed);
+                if (changed.size) this.afterMasksChanged(changed);
+            }, 80);
+        },
+
+        stopSpray() {
+            if (!this.sprayTimer) return;
+            clearInterval(this.sprayTimer);
+            this.sprayTimer = null;
         },
 
         strokeLine(from, to, erase, changed) {
@@ -966,7 +1064,7 @@
             const start = -Math.floor((brush - 1) / 2);
             const positions = new Map();
 
-            const add = (x, y) => {
+            const add = (x, y, extra) => {
                 let px = x;
                 let py = y;
                 if (this.wrap) {
@@ -975,30 +1073,60 @@
                 } else if (px < 0 || py < 0 || px >= size || py >= size) {
                     return;
                 }
-                positions.set(`${px},${py}`, { x: px, y: py });
+                const pixel = { x: px, y: py };
+                if (extra) Object.assign(pixel, extra);
+                positions.set(`${px},${py}`, pixel);
                 this.trackTouchedEdge(mask, px, py, size);
             };
 
             if (this.tool === 'spray') {
-                // Airbrush/dither spray: throw candidate pixels inside a circular
-                // radius and keep them with an ordered-dither + hash threshold.
-                const radius = Math.max(2.2, brush * 0.85);
-                const density = Core.clamp(this.opacity, 0.05, 1);
-                const count = Math.min(320, Math.max(18, Math.round(Math.PI * radius * radius * 1.8)));
-                const tick = this.sprayTick++;
-                for (let i = 0; i < count; i++) {
-                    const angle = Core.hash(i + 1, tick, 17) * Math.PI * 2;
-                    const distance = Math.sqrt(Core.hash(i + 41, tick, 71)) * radius;
-                    const px = point.x + Math.round(Math.cos(angle) * distance);
-                    const py = point.y + Math.round(Math.sin(angle) * distance);
-                    const bayer = (BAYER_4[py & 3][px & 3] + 0.5) / 16;
-                    const threshold = bayer * 0.55 + Core.hash(px, py, tick + 131) * 0.45;
-                    if (threshold > density) continue;
-                    add(px, py);
-                    if (this.mirrorX) add(size - 1 - px, py);
-                    if (this.mirrorY) add(px, size - 1 - py);
-                    if (this.mirrorX && this.mirrorY) add(size - 1 - px, size - 1 - py);
+                const radius = Math.min(16, Math.max(1, Math.round(brush * 0.7)));
+                const density = Core.clamp(this.sprayDensity, 0.01, 1);
+                const variation = Core.clamp(this.sprayVariation, 0, 1);
+                const colors = erase
+                    ? []
+                    : (this.sprayUsePalette && this.palette.length
+                        ? Array.from(new Set([this.color, ...this.palette]))
+                        : [this.color]);
+
+                const cells = [];
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > radius + 0.5) continue;
+                        const weight = Math.max(0.08, 1 - distance / (radius + 1.5));
+                        cells.push({ dx, dy, distance, weight });
+                    }
                 }
+
+                let count;
+                if (radius === 1) {
+                    count = density >= 0.95 ? 9 : Math.max(3, Math.min(6,
+                        Math.round(3 + density * 3 + (Math.random() * 2 - 1) * 1.5)));
+                } else {
+                    const base = cells.length * density;
+                    const jitter = Math.max(1, Math.round(base * 0.25));
+                    count = Math.max(1, Math.min(cells.length,
+                        Math.round(base + (Math.random() * 2 - 1) * jitter)));
+                }
+
+                const chosen = cells
+                    .map(cell => ({ cell, rank: Math.pow(Math.random(), 1 / cell.weight) }))
+                    .sort((a, b) => b.rank - a.rank)
+                    .slice(0, count);
+
+                chosen.forEach(({ cell }) => {
+                    const px = point.x + cell.dx;
+                    const py = point.y + cell.dy;
+                    const radialAlpha = 1 - Math.min(0.55, (cell.distance / (radius + 1)) * 0.55);
+                    const alpha = this.opacity * radialAlpha * (1 - variation * Math.random());
+                    const color = colors.length ? colors[Math.floor(Math.random() * colors.length)] : null;
+                    const extra = { color, alpha };
+                    add(px, py, extra);
+                    if (this.mirrorX) add(size - 1 - px, py, extra);
+                    if (this.mirrorY) add(px, size - 1 - py, extra);
+                    if (this.mirrorX && this.mirrorY) add(size - 1 - px, size - 1 - py, extra);
+                });
             } else {
                 for (let oy = start; oy < start + brush; oy++) {
                     for (let ox = start; ox < start + brush; ox++) {
@@ -1029,9 +1157,13 @@
                 ctx.restore();
             } else {
                 ctx.save();
-                ctx.globalAlpha = Core.clamp(this.opacity, 0.01, 1);
                 ctx.fillStyle = this.color;
-                positions.forEach(pos => ctx.fillRect(pos.x, pos.y, 1, 1));
+                positions.forEach(pos => {
+                    ctx.globalAlpha = Core.clamp(pos.alpha == null ? this.opacity : pos.alpha, 0.01, 1);
+                    if (pos.color) ctx.fillStyle = pos.color;
+                    else ctx.fillStyle = this.color;
+                    ctx.fillRect(pos.x, pos.y, 1, 1);
+                });
                 ctx.restore();
             }
 
@@ -2505,8 +2637,12 @@
             }
             ctx.restore();
 
-            let grids = this.project.grids.filter(grid => grid.visible);
-            if (!this.showAllGrids) {
+            // "All grids" means every visible grid. Turning it off shows only
+            // the active grid, even if that grid's eye is currently hidden.
+            let grids = this.project.grids.slice();
+            if (this.showAllGrids) {
+                grids = grids.filter(grid => grid.visible !== false);
+            } else {
                 grids = grids.filter(grid => grid.id === this.project.activeGridId);
             }
 
@@ -2927,6 +3063,113 @@
             this.notify('success', `Exported ${rendered.layout.cols}×${rendered.layout.rows} atlas (${maskCount} masks${variationCols > 1 ? `, ${variationCols} variation columns` : ''})`);
         },
 
+        exportPreviewTileset() {
+            this.exportActiveGrid();
+        },
+
+        buildTilesetRules() {
+            const options = this.exportOptions();
+            const tileSize = Core.projectTileSize(this.project);
+            const scale = Core.clamp(parseInt(options.scale, 10) || 1, 1, 16);
+            const gap = Core.clamp(parseInt(options.gap, 10) || 0, 0, 128);
+            const margin = Core.clamp(parseInt(options.margin, 10) || 0, 0, 256);
+            const drawSize = tileSize * scale;
+            const allVariations = options.variations === 'all';
+
+            const groups = this.project.grids.map(grid => {
+                const layout = Core.getLayout(this.project, grid, options.layout || 'auto');
+                const variationCols = allVariations
+                    ? layout.masks.reduce((max, mask) => Math.max(max, Core.getVariations(grid, mask).length), 1)
+                    : 1;
+                const columns = layout.cols * variationCols;
+                const rows = layout.rows;
+
+                const tiles = layout.masks.map((mask, index) => {
+                    const column = index % layout.cols;
+                    const row = Math.floor(index / layout.cols);
+                    const active = Core.getActiveVariationIndex(grid, mask);
+                    const variations = Core.getVariations(grid, mask).map((tile, variation) => {
+                        const exported = variation < variationCols;
+                        const vColumn = allVariations ? column * variationCols + variation : column;
+                        return {
+                            index: variation,
+                            active: variation === active,
+                            exported,
+                            column: vColumn,
+                            row,
+                            rect: exported ? {
+                                x: margin + vColumn * (drawSize + gap),
+                                y: margin + row * (drawSize + gap),
+                                width: drawSize,
+                                height: drawSize
+                            } : null
+                        };
+                    });
+
+                    return {
+                        mask,
+                        name: Core.MASK_NAMES[mask],
+                        short: Core.MASK_SHORT[mask],
+                        bits: {
+                            tl: Boolean(mask & 1),
+                            tr: Boolean(mask & 2),
+                            bl: Boolean(mask & 4),
+                            br: Boolean(mask & 8)
+                        },
+                        column,
+                        row,
+                        variations
+                    };
+                });
+
+                return {
+                    id: grid.id,
+                    name: grid.name,
+                    role: grid.role,
+                    mode: grid.mode,
+                    visible: grid.visible !== false,
+                    mapW: this.project.mapW,
+                    mapH: this.project.mapH,
+                    atlas: {
+                        columns,
+                        rows,
+                        tileSize,
+                        scale,
+                        drawSize,
+                        gap,
+                        margin,
+                        transparent: options.transparent,
+                        background: options.background
+                    },
+                    rule: {
+                        type: 'dual-grid-2x2',
+                        bits: { tl: 1, tr: 2, bl: 4, br: 8 },
+                        maskOrder: layout.masks.slice(),
+                        note: 'Choose the tile whose four corner bits match the 2x2 map cells around each dual-grid corner.'
+                    },
+                    tiles
+                };
+            });
+
+            return {
+                format: 'dual-grid-tile-rules',
+                version: 1,
+                project: this.project.name,
+                exportedAt: new Date().toISOString(),
+                engineHints: {
+                    unity: 'Use each group atlas as a sprite sheet; slice at drawSize and map the rule mask to the tile rect.',
+                    godot: 'Use each group atlas as a TileSet atlas source with tile size drawSize; map the rule mask to atlas coordinates.'
+                },
+                groups
+            };
+        },
+
+        exportPreviewRules() {
+            const rules = this.buildTilesetRules();
+            Core.downloadJSON(rules, `${Core.safeFilename(this.project.name, 'dual-grid')}-tile-rules.json`);
+            this.notify('success', `Exported tile rules for ${rules.groups.length} group${rules.groups.length === 1 ? '' : 's'}`);
+        },
+
         async exportAllGrids() {
             const options = this.exportOptions();
             const grids = this.project.grids.slice();
@@ -3026,6 +3269,7 @@
             if (e.key === 'Escape') {
                 this.closeAllModals();
                 this.closeNeighbourPicker();
+                this.setPreviewFocus(false);
                 this.drawing = false;
                 this.previewPainting = false;
                 return;

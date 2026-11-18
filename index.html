@@ -15,7 +15,7 @@
 </head>
 
 <body>
-    <div class="ds-app">
+    <div class="ds-app" id="dsApp">
 
         <!-- ================= HEADER ================= -->
         <header class="ds-header">
@@ -99,6 +99,22 @@
                     <input id="dsOpacity" class="ds-range" type="range" min="5" max="100" step="5" value="100"
                         aria-label="Brush opacity">
 
+                    <div id="dsSprayOptions" class="ds-spray-options hidden">
+                        <div class="ds-row ds-between">
+                            <span class="ds-label">Spray density</span>
+                            <span id="dsSprayDensityLabel" class="ds-pill">50%</span>
+                        </div>
+                        <input id="dsSprayDensity" class="ds-range" type="range" min="5" max="100" step="5"
+                            value="50" aria-label="Spray density">
+                        <div class="ds-row ds-between">
+                            <span class="ds-label">Opacity variation</span>
+                            <span id="dsSprayVariationLabel" class="ds-pill">50%</span>
+                        </div>
+                        <input id="dsSprayVariation" class="ds-range" type="range" min="0" max="100" step="5"
+                            value="50" aria-label="Spray opacity variation">
+                        <label class="ds-toggle"><input type="checkbox" id="dsSprayPalette"><span>Use palette colours</span></label>
+                    </div>
+
                     <div class="ds-toggle-grid">
                         <label class="ds-toggle"><input type="checkbox" id="dsWrap" checked><span>Edge wrap</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsSyncEdges" checked><span>Sync edges</span></label>
@@ -147,7 +163,18 @@
 
             <!-- ---------- CENTER ---------- -->
             <section class="ds-center">
-                <div class="ds-center-scroll" id="dsCenterScroll">
+                <div class="ds-center-tabs" id="dsCenterTabs" role="tablist" aria-label="Center workspace">
+                    <button class="ds-center-tab active" type="button" role="tab" data-center-tab="editor"
+                        aria-selected="true"><i class="fas fa-paintbrush"></i><span>Tile Editor</span></button>
+                    <button class="ds-center-tab" type="button" role="tab" data-center-tab="preview"
+                        aria-selected="false"><i class="fas fa-wand-magic-sparkles"></i><span>Neighbour Preview</span></button>
+                    <span class="ds-center-tab-spacer"></span>
+                    <button id="dsEditorFocusBtn" class="ds-center-tool" type="button"
+                        title="Expand the tile editor and minimise the atlas">
+                        <i class="fas fa-maximize"></i><span>Focus editor</span>
+                    </button>
+                </div>
+                <div class="ds-center-scroll" id="dsCenterScroll" data-center-tab="editor">
 
                     <!-- Tile atlas -->
                     <section class="ds-card ds-atlas-card">
@@ -241,11 +268,21 @@
                                 <h2><i class="fas fa-wand-magic-sparkles"></i> Neighbour Preview</h2>
                                 <p class="ds-subtitle">Paint the test map — the tileset auto-tiles it live. Left-click fills, right-click empties.</p>
                             </div>
-                            <div class="ds-head-actions">
+                            <button id="dsPreviewExpandBtn" class="ds-btn ds-small" type="button"
+                                title="Expand the preview area across the whole workspace">
+                                <i class="fas fa-expand"></i><span>Expand</span>
+                            </button>
+                        </div>
+                        <div class="ds-preview-toolbar">
+                            <div class="ds-preview-toolbar-group">
                                 <button id="dsRandomMapBtn" class="ds-btn ds-small" title="Generate a test map"><i class="fas fa-shuffle"></i><span>Random</span></button>
                                 <button id="dsClearMapBtn" class="ds-btn ds-small" title="Empty the test map"><i class="fas fa-square"></i><span>Empty</span></button>
                                 <button id="dsFillMapBtn" class="ds-btn ds-small" title="Fill the test map"><i class="fas fa-square-full"></i><span>Fill</span></button>
-                                <label class="ds-toggle ds-toggle-inline"><input type="checkbox" id="dsShowAllGrids" checked><span>All grids</span></label>
+                                <label class="ds-toggle ds-toggle-inline" title="Show every visible grid; turn off to show only the active grid"><input type="checkbox" id="dsShowAllGrids" checked><span>All grids</span></label>
+                            </div>
+                            <div class="ds-preview-toolbar-group ds-preview-export-group">
+                                <button id="dsPreviewExportTilesetBtn" class="ds-btn ds-small" title="Export the active grid as a tileset PNG"><i class="fas fa-image"></i><span>Tileset</span></button>
+                                <button id="dsPreviewExportRulesBtn" class="ds-btn ds-small" title="Export tile rules for every group (Unity / Godot friendly JSON)"><i class="fas fa-code"></i><span>Rules</span></button>
                             </div>
                         </div>
                         <div class="ds-preview-stage" id="dsPreviewStage">

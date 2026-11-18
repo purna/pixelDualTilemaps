@@ -18,15 +18,20 @@ TL = 1   TR = 2
 BL = 4   BR = 8
 ```
 
-The tileset only needs one tile per mask, so a complete set is **15 authored tiles**
-plus an empty/background cell. A compact **9-tile** set (four corners, four edges and
-the fill tile) is also supported for simpler outer-edge terrains.
+The tileset only needs one tile per mask, so a complete set is **15 corner masks** plus
+an editable **#0 base fill** (the sample uses a brown dirt fill). A compact **9-tile**
+set (four corners, four edges and the fill tile) is also supported for simpler
+outer-edge terrains.
 
 ## Features
 
 - **Tile atlas + large editor** — select any mask from a 3×3 or 4×4 atlas and draw it
-  at its native pixel size. The canvas shows the centre tile at full opacity plus the
-  neighbouring half-tile margin at 50% opacity, so seams are visible while drawing.
+  at its native pixel size. The canvas shows the centre tile at full opacity plus a
+  compatible neighbour in each half-tile margin at 50% opacity, so seams are visible
+  while drawing.
+- **Compatible neighbour slots** — click the `#` label in any margin to load another
+  tile that connects in that direction. Painting a margin seam edits that neighbour and
+  syncs the shared edge back into the centre and every other compatible tile.
 - **Zoomable canvas** — `−` / `+` / `Fit` controls, or `Ctrl/⌘ + wheel` over the editor.
 - **Centre border toggle** — a thin solid border marks the centre tile and can be
   switched off when it gets in the way.
@@ -65,9 +70,10 @@ the fill tile) is also supported for simpler outer-edge terrains.
    ```
    Then visit `http://localhost:8080`.
 2. The sample design loads automatically. Click a tile in the atlas and draw in the
-   large editor. The half-tile margin shows the neighbouring copy at 50% opacity.
+   large editor. Each half-tile margin shows a compatible neighbour at 50% opacity;
+   click its `#` label to load another compatible tile into that slot.
 3. Draw across a seam. With **Sync edges** on, compatible neighbour masks and all their
-   variations receive the same edge pixels.
+   variations receive the same edge pixels, including the `#0` base fill when it has art.
 4. Watch the **Live Preview** in the right sidebar and the larger **Neighbour Preview**
    below the editor.
 5. Use **New variation** to make alternate art for the selected mask. The preview mixes
@@ -78,11 +84,12 @@ the fill tile) is also supported for simpler outer-edge terrains.
 
 ## Export layouts
 
-### 4×4 · 15 tiles + background
+### 4×4 · 16 tiles
 
-Masks are written in row-major order, mask `0` → `15`. Mask `0` is the
-empty/background cell (transparent when “Transparent” is enabled, otherwise the chosen
-background colour).
+Masks are written in row-major order, mask `0` → `15`. Mask `0` is the editable
+base/background fill used where all four map corners are empty (the sample paints it
+as dirt). It is transparent when “Transparent” is enabled and the tile has not been
+painted.
 
 ```
  0   1   2   3

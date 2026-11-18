@@ -645,7 +645,7 @@ a:hover {
 
 .ds-color-row {
     display: grid;
-    grid-template-columns: 38px 1fr 30px;
+    grid-template-columns: 38px 1fr 30px 30px;
     gap: 6px;
     align-items: center;
     margin-bottom: 9px;

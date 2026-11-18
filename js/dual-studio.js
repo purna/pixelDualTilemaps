@@ -124,7 +124,7 @@
                 'dsMirrorX', 'dsMirrorY', 'dsShowPixelGrid', 'dsCenterBorder', 'dsSyncEdges', 'dsColorPicker', 'dsColorHex',
                 'dsZoomInBtn', 'dsZoomOutBtn', 'dsZoomFitBtn', 'dsZoomLabel',
                 'dsVariationCount', 'dsVariationChips', 'dsAddVariationBtn', 'dsDeleteVariationBtn',
-                'dsSaveColorBtn', 'dsPalette', 'dsRecentColors', 'dsAddLayerBtn', 'dsDuplicateLayerBtn',
+                'dsSaveColorBtn', 'dsImportPaletteBtn', 'dsPalette', 'dsRecentColors', 'dsAddLayerBtn', 'dsDuplicateLayerBtn',
                 'dsDeleteLayerBtn', 'dsLayerOpacityWrap', 'dsLayerOpacity', 'dsLayerOpacityLabel', 'dsLayers',
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
                 'dsCanvasWrap', 'dsCenterOutline', 'dsNeighbourLabels',
@@ -317,6 +317,7 @@
                     els.dsColorHex.blur();
                 }
             });
+            els.dsImportPaletteBtn.addEventListener('click', () => this.importPaletteFromInput());
             els.dsSaveColorBtn.addEventListener('click', () => this.saveColorToPalette());
             els.dsPalette.addEventListener('click', (e) => {
                 const swatch = e.target.closest('[data-color]');
@@ -665,6 +666,63 @@
             } else {
                 this.notify('info', 'That colour is already in the palette');
             }
+        },
+
+        parsePaletteInput(value) {
+            const text = String(value == null ? '' : value).trim();
+            if (!text) return [];
+
+            let raw = [];
+            const coolors = text.match(/coolors\.co\/([a-f0-9-]+)/i);
+            if (coolors) {
+                raw = coolors[1].split('-');
+            } else if (text.startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(text);
+                    if (Array.isArray(parsed)) raw = parsed.map(item => String(item));
+                } catch (error) {
+                    raw = [];
+                }
+            }
+
+            if (!raw.length) {
+                const compact = text.replace(/\s+/g, '');
+                if (/^#?[0-9a-f]{3,6}(?:-#?[0-9a-f]{3,6})+$/i.test(compact)) {
+                    raw = compact.split('-');
+                } else {
+                    raw = text.split(/[\s,;|]+/).filter(Boolean);
+                }
+            }
+
+            const colors = [];
+            raw.forEach(token => {
+                let hex = String(token).trim().replace(/^#/, '');
+                if (!/^[0-9a-f]+$/i.test(hex)) return;
+                if (hex.length === 3) hex = hex.split('').map(ch => ch + ch).join('');
+                if (!/^[0-9a-f]{6}$/i.test(hex)) return;
+                colors.push('#' + hex.toLowerCase());
+            });
+
+            return Array.from(new Set(colors)).slice(0, 40);
+        },
+
+        importPaletteFromInput() {
+            const value = window.prompt(
+                'Paste a Coolors URL or a list of hex colours (for example: #daffed, #9bf3f0, #473198):',
+                ''
+            );
+            if (value == null) return;
+
+            const colors = this.parsePaletteInput(value);
+            if (!colors.length) {
+                this.notify('error', 'No valid hex colours found in that palette');
+                return;
+            }
+
+            this.palette = colors;
+            this.persistPalette();
+            this.renderPalette();
+            this.notify('success', `Imported ${colors.length} colour${colors.length === 1 ? '' : 's'} into the palette`);
         },
 
         renderPalette() {

@@ -484,7 +484,7 @@
         updateFooter() {
             const grid = this.activeGrid();
             if (!grid) return;
-            this.setFooter(`${grid.name} · ${grid.mode === 9 ? '9-tile' : '15-tile'} set · ${this.tileSize()} px tiles · preview ${this.project.mapW}×${this.project.mapH}`);
+            this.setFooter(`${grid.name} · ${grid.mode === 9 ? '9-tile' : '16-tile'} set · ${this.tileSize()} px tiles · preview ${this.project.mapW}×${this.project.mapH}`);
         },
 
         escapeHtml(value) {
@@ -1790,7 +1790,7 @@
             roleBadge.textContent = grid.role;
             const modeBadge = document.createElement('span');
             modeBadge.className = 'ds-badge';
-            modeBadge.textContent = grid.mode === 9 ? '3×3 / 9' : '4×4 / 15';
+            modeBadge.textContent = grid.mode === 9 ? '3×3 / 9' : '4×4 / 16';
             const visBadge = document.createElement('span');
             visBadge.className = 'ds-badge';
             visBadge.textContent = grid.visible ? 'preview on' : 'preview off';
@@ -2947,7 +2947,7 @@
             const grid = this.activeGrid();
             if (!grid) return;
             if (grid.mode === 9 && !Core.SET_9.has(mask)) {
-                this.notify('info', 'That tile is not part of the 9-tile set. Switch the grid to 15 tiles to edit it.');
+                this.notify('info', 'That tile is not part of the 9-tile set. Switch the grid to the 4×4 set to edit it.');
                 return;
             }
             this.selectedMask = mask;

@@ -49,9 +49,9 @@ window.DualCore = (function () {
     };
 
     const MASK_SHORT = {
-        0: 'Empty', 1: 'Top-left', 2: 'Top-right', 3: 'Top edge', 4: 'Bottom-left',
-        5: 'Left edge', 6: 'Diagonal', 7: 'Inner BR', 8: 'Bottom-right', 9: 'Diagonal',
-        10: 'Right edge', 11: 'Inner BL', 12: 'Bottom edge', 13: 'Inner TR',
+        0: 'Background', 1: 'TL', 2: 'TR', 3: 'Top', 4: 'BL',
+        5: 'Left', 6: 'Diag', 7: 'Inner BR', 8: 'BR', 9: 'Diag',
+        10: 'Right', 11: 'Inner BL', 12: 'Bottom', 13: 'Inner TR',
         14: 'Inner TL', 15: 'Fill'
     };
 
@@ -357,6 +357,23 @@ window.DualCore = (function () {
             }
         }
 
+        // Round the concave inner corner of three-corner masks.
+        // This is internal to the tile, so it cannot create seams.
+        if (popcount(mask) === 3) {
+            const radius = Math.max(2, size / 8);
+            const cx = size / 2;
+            const cy = size / 2;
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const dx = x + 0.5 - cx;
+                    const dy = y + 0.5 - cy;
+                    if (dx * dx + dy * dy <= radius * radius) {
+                        filled[y * size + x] = 0;
+                    }
+                }
+            }
+        }
+
         const at = (x, y) => (x >= 0 && y >= 0 && x < size && y < size ? filled[y * size + x] : 0);
 
         for (let y = 0; y < size; y++) {
@@ -371,10 +388,10 @@ window.DualCore = (function () {
 
                     // Dark seam along an internal grass/dirt boundary.
                     if (!at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1)) {
-                        color = h > 0.82 ? SAMPLE.grassDark : SAMPLE.grassDeep;
+                        color = h > 0.7 ? SAMPLE.grassDark : SAMPLE.grassDeep;
                     } else if (!at(x - 2, y) || !at(x + 2, y) || !at(x, y - 2) || !at(x, y + 2)) {
-                        color = h > 0.5 ? SAMPLE.grassLight : SAMPLE.grass[1];
-                    } else if (h > 0.965) {
+                        color = h > 0.42 ? SAMPLE.grassLight : SAMPLE.grass[1];
+                    } else if (h > 0.94) {
                         color = SAMPLE.grassLight;
                     }
                 } else {
@@ -382,17 +399,17 @@ window.DualCore = (function () {
 
                     // Shadow and a few grass tufts spilling onto the dirt.
                     const touchesGrass = at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1);
-                    if (touchesGrass && h > 0.48) {
+                    if (touchesGrass && h > 0.36) {
                         color = SAMPLE.dirtDark;
-                    } else if (touchesGrass && h > 0.3) {
+                    } else if (touchesGrass && h > 0.24) {
                         color = SAMPLE.dirt[0];
-                    } else if (h > 0.94) {
+                    } else if (h > 0.92) {
                         color = SAMPLE.dirtLight;
                     }
 
-                    // Ragged grass fringe: a few 1px blades reach into the dirt.
-                    if (touchesGrass && h > 0.86) {
-                        color = SAMPLE.grassDark;
+                    // Ragged grass fringe: blades and little tufts reach into the dirt.
+                    if (touchesGrass && h > 0.62) {
+                        color = h > 0.9 ? SAMPLE.grassLight : SAMPLE.grassDark;
                     }
                 }
 

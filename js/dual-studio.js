@@ -73,7 +73,10 @@
             this.ensureSelectedMask();
             this.renderAll();
             this.updateHistoryButtons();
-            this.setFooter('Sample loaded. Draw a tile and watch the neighbour preview.');
+            this.updateFooter();
+            if (!loaded) {
+                this.notify('success', 'Sample tileset loaded. Draw a tile and watch the live preview.');
+            }
 
             console.log('Dual Grid Studio ready');
         },
@@ -89,7 +92,7 @@
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
-                'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
+                'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
                 'dsRandomMapBtn', 'dsClearMapBtn', 'dsFillMapBtn', 'dsShowAllGrids', 'dsGridList',
                 'dsAddGridBtn', 'dsGridName', 'dsGridRole', 'dsGridMode', 'dsTileSize',
                 'dsDuplicateGridBtn', 'dsDeleteGridBtn', 'dsExportLayout', 'dsExportScale',
@@ -105,6 +108,7 @@
 
             this.els.editorCtx = this.els.dsEditorCanvas.getContext('2d');
             this.els.previewCtx = this.els.dsPreviewCanvas.getContext('2d');
+            this.els.miniPreviewCtx = this.els.dsMiniPreviewCanvas.getContext('2d');
         },
 
         /* --------------------------------------------------------
@@ -1121,6 +1125,22 @@
                 canvas.height = size;
                 wrap.appendChild(canvas);
 
+                const indexBadge = document.createElement('span');
+                indexBadge.className = 'ds-atlas-index';
+                indexBadge.textContent = mask === 0 ? 'BG' : `#${mask}`;
+                wrap.appendChild(indexBadge);
+
+                if (mask !== 0) {
+                    const bitDots = document.createElement('span');
+                    bitDots.className = 'ds-atlas-bit-dots';
+                    [1, 2, 4, 8].forEach(bit => {
+                        const dot = document.createElement('i');
+                        dot.className = mask & bit ? 'on' : '';
+                        bitDots.appendChild(dot);
+                    });
+                    wrap.appendChild(bitDots);
+                }
+
                 const meta = document.createElement('div');
                 meta.className = 'ds-atlas-meta';
 
@@ -1129,21 +1149,7 @@
                 name.textContent = mask === 0 ? 'Background' : Core.MASK_SHORT[mask];
                 name.title = Core.MASK_NAMES[mask];
 
-                const maskLabel = document.createElement('span');
-                maskLabel.className = 'ds-atlas-mask';
-                maskLabel.textContent = mask === 0 ? '—' : `#${mask}`;
-
                 meta.appendChild(name);
-                meta.appendChild(maskLabel);
-
-                const bits = document.createElement('div');
-                bits.className = 'ds-atlas-bits';
-                [1, 2, 4, 8].forEach(bit => {
-                    const dot = document.createElement('span');
-                    dot.className = 'ds-bit-dot' + (mask & bit ? ' on' : '');
-                    bits.appendChild(dot);
-                });
-                meta.appendChild(bits);
 
                 cell.appendChild(wrap);
                 cell.appendChild(meta);
@@ -1512,6 +1518,18 @@
                     );
                     ctx.restore();
                 }
+            }
+
+            const mini = this.els.dsMiniPreviewCanvas;
+            if (mini) {
+                if (mini.width !== width || mini.height !== height) {
+                    mini.width = width;
+                    mini.height = height;
+                }
+                const miniCtx = this.els.miniPreviewCtx;
+                miniCtx.imageSmoothingEnabled = false;
+                miniCtx.clearRect(0, 0, width, height);
+                miniCtx.drawImage(canvas, 0, 0);
             }
 
             this.updatePreviewHint();

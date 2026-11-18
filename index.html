@@ -521,10 +521,11 @@
                         <strong>#0</strong> is the editable base/background fill (the sample uses brown dirt).</p>
                     <p>Use the <strong>Variations</strong> bar to create alternate art for the same mask.
                         The live preview picks variations stably by map position, and edge sync keeps every
-                        variation seamless. The <strong>Spray</strong> tool scatters a dithered speckle;
-                        opacity controls its density.</p>
-                    <p>Drag the splitter between the Tile Atlas and Tile Editor to resize the two center
-                        panels, then double-click the splitter to reset them.</p>
+                        variation seamless. The <strong>Spray</strong> tool keeps spraying while held and
+                        has density, opacity-variation and palette-dither controls.</p>
+                    <p>The Tile Editor and Neighbour Preview are separate tabs. Drag the splitter between
+                        the Tile Atlas and Tile Editor to resize them, or use <strong>Focus editor</strong> to
+                        expand the editor and minimise the atlas.</p>
 
                     <h3><i class="fas fa-wand-magic-sparkles"></i> 2. Test neighbours</h3>
                     <p>The editor shows the centre tile at full size with compatible neighbours around it
@@ -535,8 +536,8 @@
                         zoom controls or <strong>Ctrl/⌘ + wheel</strong> to zoom, and toggle the thin
                         <strong>Centre border</strong> off if it gets in the way.</p>
                     <p>Paint the test map under <strong>Neighbour Preview</strong>. The preview resolves every
-                        2×2 corner mask and picks the matching tile, so you can check edges and inner corners
-                        before exporting.</p>
+                        2×2 corner mask and picks the matching tile. Use its toolbar to expand the preview,
+                        export the tileset PNG, or export per-group tile rules for Unity or Godot.</p>
 
                     <h3><i class="fas fa-layer-group"></i> 3. Build a design</h3>
                     <p>A design can contain several grids. An <strong>outer</strong> grid renders first and an

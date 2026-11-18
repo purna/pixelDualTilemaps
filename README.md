@@ -33,8 +33,12 @@ outer-edge terrains.
   tile that connects in that direction. Painting a margin seam edits that neighbour and
   syncs the shared edge back into the centre and every other compatible tile.
 - **Zoomable canvas** — `−` / `+` / `Fit` controls, or `Ctrl/⌘ + wheel` over the editor.
-- **Resizable center panels** — drag the splitter between the Tile Atlas and Tile
-  Editor to make either side wider or narrower. Double-click it to reset the split.
+- **Tabbed center workspace** — the Tile Editor and Neighbour Preview are separate
+  tabs. Drag the splitter between the Tile Atlas and Tile Editor, or use **Focus
+  editor** to expand the editor and minimise the atlas.
+- **Expandable neighbour preview** — a dedicated toolbar can expand the preview across
+  the workspace, export the active tileset PNG, and export per-group tile rules as
+  Unity/Godot-friendly JSON.
 - **Centre border toggle** — a thin solid border marks the centre tile and can be
   switched off when it gets in the way.
 - **Tile variations** — every mask can have several variations. Duplicate the active
@@ -50,7 +54,8 @@ outer-edge terrains.
 - **Layers per tile** — add, duplicate, hide, rename and set opacity on tile layers.
 - **Pixel tools** — pencil, brush, eraser, spray can, flood fill and eyedropper, with
   brush size, opacity, edge-wrap drawing, mirror X/Y and a pixel-grid overlay. The
-  spray can scatters pixels with an ordered-dither pattern; opacity controls its density.
+  spray can keeps spraying while held, supports density and opacity-variation controls,
+  and can dither through the current palette.
 - **Seam sync** — with **Sync edges** on, drawing an edge copies it into every compatible
   neighbouring mask and every variation, so the atlas stays seamless automatically.
 - **Undo / redo** for tile edits, sync changes and layer operations, including the
@@ -62,6 +67,8 @@ outer-edge terrains.
 - **PNG export** — active grid, all grids, or a combined sheet, with configurable
   scale, gap, margin, background, and active-only or all-variation export. Also exports
   the project JSON.
+- **Tile-rule export** — the preview toolbar exports a rules JSON containing every
+  group's mask-to-tile mapping, atlas coordinates and pixel rects for Unity or Godot.
 - **Themed examples** — six procedural starter sets: Meadow & Wildflowers, Sand Dunes
   & Shells, Snowfield & Ice, Dungeon Floor & Moss, Pebble Beach & Foam, and
   Cobblestones & Puddles. Each includes its own tile art, inner overlay and test-map

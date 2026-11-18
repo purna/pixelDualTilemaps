@@ -950,22 +950,27 @@ body.ds-resizing {
     scrollbar-color: var(--line) transparent;
 }
 
-.ds-center-scroll[data-center-tab=\"preview\"] {
+.ds-center-scroll[data-center-tab="preview"] {
     display: flex;
     flex-direction: column;
 }
 
-.ds-center-scroll[data-center-tab=\"preview\"] .ds-atlas-card,
-.ds-center-scroll[data-center-tab=\"preview\"] .ds-center-splitter,
-.ds-center-scroll[data-center-tab=\"preview\"] .ds-editor-card {
+.ds-center-scroll[data-center-tab="preview"] .ds-atlas-card,
+.ds-center-scroll[data-center-tab="preview"] .ds-center-splitter,
+.ds-center-scroll[data-center-tab="preview"] .ds-editor-card {
     display: none !important;
 }
 
-.ds-center-scroll[data-center-tab=\"editor\"] .ds-preview-card {
+.ds-center-scroll[data-center-tab="editor"] .ds-preview-card {
     display: none;
 }
 
-.ds-center-scroll.is-editor-focus[data-center-tab=\"editor\"] {
+.ds-center-scroll[data-center-tab="preview"] .ds-preview-card {
+    width: 100%;
+    align-self: stretch;
+}
+
+.ds-center-scroll.is-editor-focus[data-center-tab="editor"] {
     grid-template-columns: minmax(0, 1fr) !important;
 }
 
@@ -1012,7 +1017,21 @@ body.ds-resizing {
 }
 
 .ds-app.ds-preview-focus .ds-preview-card {
-    min-height: calc(100vh - 150px);
+    width: 100%;
+}
+
+.ds-app.ds-preview-focus .ds-preview-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-height: calc(100vh - 250px);
+}
+
+.ds-app.ds-preview-focus .ds-preview-stage canvas {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100vh - 252px);
 }
 
 .ds-card {

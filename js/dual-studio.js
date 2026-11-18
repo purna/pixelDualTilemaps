@@ -53,7 +53,6 @@
         centerTab: 'editor',
         editorFocus: false,
         previewFocus: false,
-        sprayTick: 0,
         sprayDensity: 0.5,
         sprayVariation: 0.5,
         sprayUsePalette: false,

@@ -4,800 +4,458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SeamlessDual Tilemap Editor Pro</title>
-    <!-- Fonts & Icons -->
+    <title>Dual Grid Studio — Dual Tilemap Creator</title>
+    <meta name="description" content="Design dual-grid tilesets with a live auto-tiled neighbour preview. Export 9-tile (3×3) or 15-tile (4×4) atlases.">
     <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
-    <!-- Custom Font -->
-    <style>
-        @font-face {
-            font-family: 'Inter';
-            src: url('fonts/inter-normal.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Press Start 2P';
-            src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-    </style>
-    <!-- Load Press Start 2P font from Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Local Font Awesome Implementation -->
     <link rel="stylesheet" href="fonts/fontawesome-free-6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/modal.css">
-    <link rel="stylesheet" href="css/tutorials.css">
-    <link rel="stylesheet" href="css/dual-grid.css">
-    <link rel="stylesheet" href="css/right-panel.css">
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/dual-studio.css">
 </head>
 
 <body>
-    <!-- HEADER -->
-    <header>
-        <div class="logo-area">
-            <h1>Dual Tilemap Editor</h1>
-            <span class="badge">Seamless Pro V1.0</span>
-        </div>
+    <div class="ds-app">
 
-        <div class="header-controls">
-            <button id="undoBtn" class="btn icon-only" title="Undo (Ctrl+Z)"
-                data-tooltip="**Undo**\n--Reverse last action--\nShortcut: `Ctrl+Z`"><i
-                    class="fas fa-undo"></i></button>
-            <button id="redoBtn" class="btn icon-only" title="Redo (Ctrl+Y)"
-                data-tooltip="**Redo**\n--Restore undone action--\nShortcut: `Ctrl+Y`"><i
-                    class="fas fa-redo"></i></button>
-
-            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
-
-            <button id="uiBtn" class="btn icon-only" title="Hide UI Elements">
-                <i class="fas fa-eye"></i>
-            </button>
-
-            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
-
-            <div class="zoom-controls-header">
-                <button id="zoomOutBtn" class="btn icon-only" title="Zoom Out (Ctrl/-)"><i
-                        class="fas fa-minus"></i></button>
-                <span id="zoomDisplay" class="zoom-display">1x</span>
-                <button id="zoomInBtn" class="btn icon-only" title="Zoom In (Ctrl/+)"><i
-                        class="fas fa-plus"></i></button>
-                <button id="zoomResetBtn" class="btn icon-only" title="Reset Zoom (0)"><i
-                        class="fas fa-compress-arrows-alt"></i></button>
-            </div>
-
-            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
-
-            <button id="saveBtn" class="btn primary"
-                data-tooltip="**Save Project**\n--Save your work--\n\nSave your current tile map and settings to a file">
-                <i class="fas fa-save"></i> Save
-            </button>
-            <button id="loadBtn" class="btn"
-                data-tooltip="**Load Project**\n--Open saved work--\n\nLoad a previously saved tile map project">
-                <i class="fas fa-folder-open"></i> Load
-            </button>
-            <button id="exportBtn" class="btn"
-                data-tooltip="**Export**\n--Export your tiles--\n\nExport your tile maps as image files">
-                <i class="fas fa-file-export"></i> Export
-            </button>
-            <button id="addNewBtn" class="btn"
-                data-tooltip="**Add New**\n--Create a blank tile--\n\nCreate a blank tile in the next available editor slot. Name and save it from the Tiles library.">
-                <i class="fas fa-plus-square"></i> Add New
-            </button>
-        </div>
-    </header>
-
-    <!-- MAIN CONTAINER -->
-    <div class="main-container">
-
-        <!-- LEFT TOOLBAR -->
-        <aside class="toolbar" id="tool-buttons">
-            <button class="tool-btn active" data-tool="pencil" title="Pencil (P)"
-                data-tooltip="**Pencil Tool**\n--Freehand drawing--\nShortcut: P">
-                <i class="fas fa-pencil-alt"></i>
-                <span>Pencil</span>
-            </button>
-            <button class="tool-btn" data-tool="brush" title="Brush (B)"
-                data-tooltip="**Brush Tool**\n--Smooth painting--\nShortcut: B">
-                <i class="fas fa-paint-brush"></i>
-                <span>Brush</span>
-            </button>
-            <button class="tool-btn" data-tool="eraser" title="Eraser (E)"
-                data-tooltip="**Eraser Tool**\n--Remove pixels--\nShortcut: E">
-                <i class="fas fa-eraser"></i>
-                <span>Eraser</span>
-            </button>
-            <div class="separator"></div>
-            <button class="tool-btn" data-tool="eyedropper" title="Color Picker (I)"
-                data-tooltip="**Color Picker**\n--Sample colors--\nShortcut: I">
-                <i class="fas fa-eye-dropper"></i>
-                <span>Picker</span>
-            </button>
-
-            <div class="toolbar-spacer"></div>
-
-
-            <button class="tool-btn" id="layersBtn" title="Layers (L)"
-                data-tooltip="**Layer Management**\n--Organize your artwork--\n\n• Add new layers\n• Delete layers\n• Toggle visibility\n• Reorder layers\n\nCreate complex artwork with multiple layers">
-                <i class="fas fa-layer-group"></i>
-                <span>Layers</span>
-            </button>
-            <div class="separator"></div>
-            <button class="tool-btn" id="settingsBtn" title="Settings"
-                data-tooltip="**Settings**\n--Configure preferences--\n\n• Grid visibility\n• Background color\n• Canvas size\n• Auto-save options\n\nToggle tooltips on/off here">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </button>
-            <div class="separator"></div>
-
-            <button class="tool-btn" id="tilemapBtn" title="Tilemap"
-                data-tooltip="**Tilemap Manager**\n--Tile pattern editor--\n\n• View 3x3 tile grid\n• Select active tiles\n• Edit seamless patterns\n\nCreate repeating tile patterns">
-                <i class="fas fa-th"></i>
-                <span>Tilemap</span>
-            </button>
-            <button class="tool-btn" id="tilesBtn" title="Saved Tiles (T)"
-                data-tooltip="**Saved Tiles**\n--Your tile library--\n\n• Save the current tile\n• Reopen a tile to edit\n• Delete tiles you no longer need\n\nTiles are stored in your browser">
-                <i class="fas fa-table-cells-large"></i>
-                <span>Tiles</span>
-            </button>
-        </aside>
-
-        <!-- CENTER WORKSPACE -->
-        <div class="workspace">
-            <div class="controls-container">
-                <h1>Seamless Tile Editor</h1>
-            </div>
-
-            <div class="tile-grid-container">
-                <div class="tile-grid">
-                    <!-- The 3x3 canvas grid -->
-                    <!-- Row 1 -->
-                    <canvas id="preview-0-0" width="512" height="512"></canvas>
-                    <canvas id="preview-0-1" width="512" height="512"></canvas>
-                    <canvas id="preview-0-2" width="512" height="512"></canvas>
-                    <!-- Row 2 -->
-                    <canvas id="preview-1-0" width="512" height="512"></canvas>
-                    <canvas id="editor-canvas" width="512" height="512"></canvas>
-                    <canvas id="preview-1-2" width="512" height="512"></canvas>
-                    <!-- Row 3 -->
-                    <canvas id="preview-2-0" width="512" height="512"></canvas>
-                    <canvas id="preview-2-1" width="512" height="512"></canvas>
-                    <canvas id="preview-2-2" width="512" height="512"></canvas>
+        <!-- ================= HEADER ================= -->
+        <header class="ds-header">
+            <div class="ds-brand">
+                <div class="ds-brand-mark"><i class="fas fa-border-all"></i></div>
+                <div class="ds-brand-text">
+                    <h1>Dual Grid Studio</h1>
+                    <span>Dual tilemap creator</span>
                 </div>
             </div>
 
-            <!-- Floating Brush Controls Overlay -->
-            <div class="brush-controls-overlay">
-                <div class="brush-controls">
-                    <label for="brush-size">Brush Size:</label>
-                    <input type="range" id="brush-size" min="0" max="15" value="0" hidden="hidden">
-                    <span id="brush-size-value" class="brush-size-display">1</span>
-                    <div class="preset-sizes" id="floating-brush-presets">
-                        <button class="preset-btn" data-size="0">1</button>
-                        <button class="preset-btn" data-size="1">3</button>
-                        <button class="preset-btn" data-size="3">7</button>
-                        <button class="preset-btn" data-size="5">11</button>
-                    </div>
-
-                    <!-- Add Seperator-->
-
-
-                    <label for="brush-size">Opacity:</label>
-                    <input type="range" id="opacity-size" min="0" max="100" value="100" hidden="hidden">
-                    <div class="preset-sizes opacity-presets">
-                        <button class="preset-btn opacity-btn" data-opacity="0.25">25%</button>
-                        <button class="preset-btn opacity-btn" data-opacity="0.5">50%</button>
-                        <button class="preset-btn opacity-btn" data-opacity="0.75">75%</button>
-                        <button class="preset-btn opacity-btn active" data-opacity="1">100%</button>
-                    </div>
-                </div>
-
+            <div class="ds-project-name-wrap">
+                <label for="dsProjectName" class="ds-sr-only">Design name</label>
+                <input id="dsProjectName" class="ds-project-name" type="text" value="Untitled Design" maxlength="60"
+                    spellcheck="false" title="Design name">
+                <span id="dsSaveState" class="ds-save-state">Saved</span>
             </div>
 
-            <!-- Floating Color History Overlay -->
-            <div class="floating-color-history" aria-label="Recent colors">
-                <span class="grippy"></span>
-                <div class="color-history-swatches">
-                    <div class="color-swatch" data-color-index="0" title="Recent Color 1 (Press 1)"></div>
-                    <div class="color-swatch" data-color-index="1" title="Recent Color 2 (Press 2)"></div>
-                    <div class="color-swatch" data-color-index="2" title="Recent Color 3 (Press 3)"></div>
-                    <div class="color-swatch" data-color-index="3" title="Recent Color 4 (Press 4)"></div>
-                </div>
+            <div class="ds-header-actions">
+                <button id="dsUndoBtn" class="ds-btn ds-icon-btn" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                <button id="dsRedoBtn" class="ds-btn ds-icon-btn" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                <span class="ds-sep"></span>
+                <button id="dsNewBtn" class="ds-btn" title="Start a new design"><i class="fas fa-file-circle-plus"></i><span>New</span></button>
+                <button id="dsOpenBtn" class="ds-btn" title="Open a saved project"><i class="fas fa-folder-open"></i><span>Open</span></button>
+                <button id="dsSaveBtn" class="ds-btn" title="Download project file (Ctrl+S)"><i class="fas fa-floppy-disk"></i><span>Save</span></button>
+                <button id="dsExportBtn" class="ds-btn ds-primary" title="Jump to export options"><i class="fas fa-file-export"></i><span>Export</span></button>
+                <button id="dsHelpBtn" class="ds-btn ds-icon-btn" title="Help, shortcuts & credits"><i class="fas fa-circle-question"></i></button>
             </div>
+        </header>
 
+        <!-- ================= MAIN ================= -->
+        <main class="ds-main">
 
-            <div id="info-box" class="info-box">
-                <p><strong>Instructions:</strong> Drag seamlessly across the 9 tiles to edit the central tile.
-                    Drawing now only stops when you release the mouse button or lift your finger.
-                    Use the toolbar on the left to switch between brush and eraser tools.</p>
-            </div>
-        </div>
-
-        <!-- RIGHT PANEL (SLIDE OUT) -->
-        <aside class="right-panel" id="side-panel">
-
-            <!-- Color Palette Section -->
-            <div id="panel-palette" class="panel-section">
-                <div class="section-header">
-                    <div class="label-group">
-                        <span>Color Palette</span>
+            <!-- ---------- LEFT PANEL ---------- -->
+            <aside class="ds-left ds-panel">
+                <section class="ds-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-pen-ruler"></i> Tools</h2>
                     </div>
-                    <div class="layer-controls">
-                        <button class="section-toggle" data-target="palette-container"
-                            title="Toggle Palette Section">
-                            <i class="fas fa-minus"></i>
+                    <div class="ds-tool-grid" id="dsToolGrid">
+                        <button class="ds-tool active" data-tool="pencil" title="Pencil (P)">
+                            <i class="fas fa-pencil-alt"></i><span>Pencil</span>
+                        </button>
+                        <button class="ds-tool" data-tool="brush" title="Brush (B)">
+                            <i class="fas fa-paint-brush"></i><span>Brush</span>
+                        </button>
+                        <button class="ds-tool" data-tool="eraser" title="Eraser (E)">
+                            <i class="fas fa-eraser"></i><span>Eraser</span>
+                        </button>
+                        <button class="ds-tool" data-tool="fill" title="Fill (G)">
+                            <i class="fas fa-fill-drip"></i><span>Fill</span>
+                        </button>
+                        <button class="ds-tool" data-tool="picker" title="Color picker (I)">
+                            <i class="fas fa-eye-dropper"></i><span>Picker</span>
                         </button>
                     </div>
-                </div>
-                <div class="section-body">
-                    <div class="color-controls">
-                        <input type="color" id="colorPicker" value="#282828"
-                            style="width:30px; height:30px; padding:0; border:none; background:none;">
-                        <input type="text" id="colorHex" value="#282828"
-                            style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); width:70px; padding:4px; font-family:monospace;">
-                        <div style="display:flex; gap:5px;">
-                            <button id="importPaletteUrlBtn" title="Import from Coolors URL"
-                                style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
-                                <i class="fas fa-link"></i>
-                            </button>
-                            <button id="saveColorBtn" title="Save Color"
-                                style="background:none; border:none; color:var(--accent-primary); cursor:pointer;">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                </section>
+
+                <section class="ds-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-sliders"></i> Brush</h2>
+                        <span id="dsBrushSizeLabel" class="ds-pill">1 px</span>
+                    </div>
+                    <input id="dsBrushSize" class="ds-range" type="range" min="1" max="15" step="1" value="1"
+                        aria-label="Brush size">
+                    <div class="ds-preset-row" id="dsBrushPresets">
+                        <button data-size="1" class="active">1</button>
+                        <button data-size="2">2</button>
+                        <button data-size="3">3</button>
+                        <button data-size="4">4</button>
+                        <button data-size="7">7</button>
+                        <button data-size="11">11</button>
+                    </div>
+                    <div class="ds-row ds-between">
+                        <span class="ds-label">Opacity</span>
+                        <span id="dsOpacityLabel" class="ds-pill">100%</span>
+                    </div>
+                    <input id="dsOpacity" class="ds-range" type="range" min="5" max="100" step="5" value="100"
+                        aria-label="Brush opacity">
+
+                    <div class="ds-toggle-grid">
+                        <label class="ds-toggle"><input type="checkbox" id="dsWrap" checked><span>Edge wrap</span></label>
+                        <label class="ds-toggle"><input type="checkbox" id="dsMirrorX"><span>Mirror X</span></label>
+                        <label class="ds-toggle"><input type="checkbox" id="dsMirrorY"><span>Mirror Y</span></label>
+                        <label class="ds-toggle"><input type="checkbox" id="dsShowPixelGrid" checked><span>Pixel grid</span></label>
+                    </div>
+                </section>
+
+                <section class="ds-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-palette"></i> Color</h2>
+                    </div>
+                    <div class="ds-color-row">
+                        <input type="color" id="dsColorPicker" value="#6fbf3a" aria-label="Current colour">
+                        <input type="text" id="dsColorHex" class="ds-hex-input" value="#6fbf3a" maxlength="7"
+                            spellcheck="false" aria-label="Hex colour">
+                        <button id="dsSaveColorBtn" class="ds-btn ds-icon-btn" title="Add colour to palette"><i
+                                class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="dsPalette" class="ds-palette" aria-label="Colour palette"></div>
+                    <div class="ds-recent-label">Recent</div>
+                    <div id="dsRecentColors" class="ds-recent"></div>
+                </section>
+
+                <section class="ds-section ds-grow">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-layer-group"></i> Tile Layers</h2>
+                        <div class="ds-head-actions">
+                            <button id="dsAddLayerBtn" class="ds-mini-btn" title="Add layer"><i class="fas fa-plus"></i></button>
+                            <button id="dsDuplicateLayerBtn" class="ds-mini-btn" title="Duplicate layer"><i class="fas fa-copy"></i></button>
+                            <button id="dsDeleteLayerBtn" class="ds-mini-btn ds-danger" title="Delete layer"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
-                    <div id="palette-container" class="palette-grid">
-                        <!-- Palette swatches will be added here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Layers Section -->
-            <div id="panel-layers" class="panel-section hidden">
-                <div class="section-header">
-                    <div class="label-group">
-                        <span>Layers</span>
-                    </div>
-                    <div class="layer-controls">
-                        <button class="section-toggle" data-target="layers-container"
-                            title="Toggle Layers Section">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="section-body">
-                  
-                    
-                     <div id="layers-container" class="folder-controls">
-                                    <button class="layer-control-btn" id="add-group-btn" title="Add Group">
-                                        <i class="fas fa-folder-plus"></i>
-                                    </button>
-                                    <button class="layer-control-btn" id="expand-all-btn" title="Expand All">
-                                        <i class="fas fa-expand-arrows-alt"></i>
-                                    </button>
-                                    <button class="layer-control-btn" id="collapse-all-btn" title="Collapse All">
-                                        <i class="fas fa-compress-arrows-alt"></i>
-                                    </button>
-                                    <button class="layer-control-btn" id="addLayerBtn" title="Add Layer">
-                                        <i class="fas fa-plus-circle"></i>
-                                    </button>
-                    </div>
-                  
-
-
-                    <div id="layers-list" class="layers-list" style="max-height: 400px;">
-                        <!-- Layers will be added here -->
-                    </div>
-                </div>
-            </div>
-
-
-
-            <!-- Tool Options Section -->
-            <div id="panel-tool-options" class="panel-section">
-                <div class="section-header">
-                    <div class="label-group">
-                        <span>Tools Options</span>
-                    </div>
-                    <div class="layer-controls">
-                        <button class="section-toggle" data-target="tools-container"
-                            title="Toggle Tools Section">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="section-body">
-                    <div id="tools-container">
-                        <div style="margin-bottom:10px; display: block;" id="panel-tool-control">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <label style="font-size:11px; color:var(--text-secondary);">
-                                    <span id="brushSizeLabelPanel">Brush Size</span>
-                                </label>
-                                <span style="font-size:11px; color:var(--text-secondary);" id="brushSizeDisplay">1</span>
-                            </div>
-                            <input type="range" id="brushSizeSlider" min="0" max="15" value="0" style="width:100%;">
+                    <div id="dsLayerOpacityWrap" class="ds-layer-opacity">
+                        <div class="ds-row ds-between">
+                            <span class="ds-label">Layer opacity</span>
+                            <span id="dsLayerOpacityLabel" class="ds-pill">100%</span>
                         </div>
-                        <div style="margin-bottom:10px;" id="panel-opacity-control">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <label style="font-size:11px; color:var(--text-secondary);">
-                                    <span>Opacity</span>
-                                </label>
-                                <span style="font-size:11px; color:var(--text-secondary);" id="opacityDisplay">100</span>
-                            </div>
-                            <input type="range" id="opacitySlider" min="0" max="100" value="100" style="width:100%;">
-                        </div>
+                        <input id="dsLayerOpacity" class="ds-range" type="range" min="0" max="100" step="5" value="100">
                     </div>
-                </div>
-            </div>
+                    <div id="dsLayers" class="ds-layers"></div>
+                </section>
+            </aside>
 
-            <div id="panel-tool-canvas" class="panel-section hidden">
-                <div class="section-header">
-                    <div class="label-group">
-                        <span>Canvas Options</span>
-                    </div>
-                    <div class="layer-controls">
-                        <button class="section-toggle" data-target="canvas-container"
-                            title="Toggle Canvas Section">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="section-body">
-                    <div id="canvas-container">
-                        <div class="canvas-size-controls">
-                            <div class="size-input-group">
-                                <input type="number" id="widthInput" value="32" min="4" max="512" placeholder="Width"
-                                    class="size-input">
-                                <span class="size-separator">×</span>
-                                <input type="number" id="heightInput" value="32" min="4" max="512" placeholder="Height"
-                                    class="size-input">
-                            </div>
-                            <button id="apply-canvas-resize" class="btn btn-apply-size" title="Apply Canvas Resize">
-                                <i class="fas fa-expand-arrows-alt"></i>
-                                <span>Apply</span>
-                            </button>
-                        </div>
-                        <div class="size-description">
-                            Set the canvas dimensions (4-512 pixels)
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- ---------- CENTER ---------- -->
+            <section class="ds-center">
+                <div class="ds-center-scroll">
 
-            <!-- Tilemap Panel Section -->
-            <div id="panel-tilemap" class="panel-section hidden">
-                <div class="section-header">
-                    <div class="label-group">
-                        <span>Tilemap Manager</span>
-                    </div>
-                    <div class="layer-controls">
-                        <button class="section-toggle" data-target="tilemap-container"
-                            title="Toggle Tilemap Section">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="section-body">
-                    <div id="tilemap-container">
-                        <div class="tilemap-grid" id="tilemapGrid">
-                            <!-- 3x3 grid of tilemap squares connected to actual canvases -->
-                            <div class="tilemap-square" data-row="0" data-col="0" data-canvas="preview-0-0">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="0" data-col="1" data-canvas="preview-0-1">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="0" data-col="2" data-canvas="preview-0-2">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="1" data-col="0" data-canvas="preview-1-0">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square center" data-row="1" data-col="1" data-canvas="editor-canvas">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="1" data-col="2" data-canvas="preview-1-2">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="2" data-col="0" data-canvas="preview-2-0">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="2" data-col="1" data-canvas="preview-2-1">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                            <div class="tilemap-square" data-row="2" data-col="2" data-canvas="preview-2-2">
-                                <canvas width="32" height="32"></canvas>
-                            </div>
-                        </div>
-                        <div class="tilemap-info">
-                            <p style="font-size:10px; color:var(--text-secondary); margin-top:8px; text-align:center;">
-                                Select a tile to make it active
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </aside>
-
-    </div>
-
-    <!-- Floating Toggle - moved outside main-container -->
-    <div id="panel-toggle" title="Toggle Panel">
-        <i class="fas fa-chevron-right"></i>
-    </div>
-
-
-
-    <!-- UNIFIED SETTINGS MODAL -->
-    <div class="modal-overlay" id="unified-settings-modal">
-        <div class="modal">
-            <header>
-                <div class="modal-title">
-                    <i class="fas fa-cog"></i> Settings
-                </div>
-                <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:15px;">
-                    Configure your Tilemap Studio preferences
-                </div>
-
-                <!-- Settings Tabs -->
-                <div class="settings-tabs">
-                    <button class="settings-tab active" data-tab="general" id="tab-general">
-                        <i class="fas fa-sliders-h"></i> General
-                    </button>
-                    <button class="settings-tab" data-tab="scene" id="tab-scene">
-                        <i class="fas fa-image"></i> Tilemaps
-                    </button>
-                    <button class="settings-tab" data-tab="tiles" id="tab-tiles">
-                        <i class="fas fa-table-cells-large"></i> Tiles
-                    </button>
-                    <button class="settings-tab" data-tab="export" id="tab-export">
-                        <i class="fas fa-download"></i> Export
-                    </button>
-                    <button class="settings-tab" data-tab="tutorial" id="tab-tutorial">
-                        <i class="fas fa-graduation-cap"></i> Tutorial
-                    </button>
-                </div>
-            </header>
-            <!-- Scrollable Content Wrapper -->
-            <div class="modal-content-wrapper">
-                <!-- General Settings Tab -->
-                <div class="settings-tab-content active" data-tab-content="general">
-                    <div class="settings-content">
-                        <div class="settings-section">
-                            <div class="section-heading">Display Settings</div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-border" checked>
-                                    Show Border
-                                </label>
-                            </div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-tooltips" checked>
-                                    Show Tooltips
-                                </label>
-                            </div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-helpers" checked>
-                                    Show Helpers
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <div class="section-heading">Application Settings</div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-darkmode" checked>
-                                    Dark Mode
-                                </label>
-                            </div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-autosave" checked>
-                                    Auto Save
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scene Settings Tab -->
-                <div class="settings-tab-content" data-tab-content="scene">
-                    <div class="scene-settings-content">
-                        <div class="settings-section">
-                            <div class="section-heading">Tilemap Display</div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-grid" checked>
-                                    Show Grid
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="settings-section">
-                            <div class="section-heading">Background Settings</div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    Default Background
-                                </label>
-                                <div class="bg-control-container">
-                                    <!-- Background mode toggle -->
-                                    <div class="bg-mode-toggle" role="tablist" aria-label="Background mode">
-                                        <button class="bg-mode-btn active" data-mode="color" role="tab"
-                                            aria-selected="true">
-                                            <i class="fas fa-palette"></i>
-                                            <span>Color</span>
-                                        </button>
-                                        <button class="bg-mode-btn" data-mode="transparent" role="tab"
-                                            aria-selected="false">
-                                            <i class="fas fa-eye-slash"></i>
-                                            <span>Transparent</span>
-                                        </button>
-                                    </div>
-
-                                    <!-- Color picker section -->
-                                    <div class="bg-color-section" id="bg-color-section">
-                                        <div class="color-picker-group">
-                                            <input type="color" id="setting-bg-color" value="#ffffff" class="bg-color-input"
-                                                aria-label="Background color">
-                                            <div class="color-preview" id="color-preview">
-                                                <div class="preview-box" id="preview-box"></div>
-                                                <span class="color-value" id="color-value">#ffffff</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Transparent preview section -->
-                                    <div class="bg-transparent-section hidden" id="bg-transparent-section">
-                                        <div class="transparent-preview">
-                                            <div class="transparent-grid"></div>
-                                            <span class="transparent-label">Background will be transparent</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    Background Color:
-                                    <input type="color" id="setting-background-color" value="#1a1a2e">
-                                </label>
-                            </div>
-                        <!-- Canvas Size Settings -->
-                        <div class="property-group">
-                            <label class="property-label">Canvas Size</label>
-                            <div class="canvas-size-controls">
-                                <div class="size-input-group">
-                                    <input type="number" id="modal-canvas-width" value="32" min="4" max="1024"
-                                        placeholder="Width" class="size-input">
-                                    <span class="size-separator">×</span>
-                                    <input type="number" id="modal-canvas-height" value="32" min="4" max="1024"
-                                        placeholder="Height" class="size-input">
-                                </div>
-                                <button id="modal-apply-canvas-resize" class="btn btn-apply-size"
-                                    title="Apply Canvas Resize">
-                                    <i class="fas fa-expand-arrows-alt"></i>
-                                    <span>Apply</span>
-                                </button>
-                            </div>
-                            <div class="size-description">
-                                Set the canvas dimensions (4-1024 pixels)
-                            </div>
-                        </div>
-                        <!-- Default Size Presets -->
-                        <div class="property-group">
-                            <label class="property-label">Default Sizes</label>
-                            <div class="default-size-presets">
-                                <button class="preset-btn" data-width="24" data-height="24">24×24</button>
-                                <button class="preset-btn" data-width="36" data-height="36">36×36</button>
-                                <button class="preset-btn" data-width="48" data-height="48">48×48</button>
-                                <button class="preset-btn" data-width="128" data-height="128">128×128</button>
-                                <button class="preset-btn" data-width="512" data-height="512">512×512</button>
-                                <button class="preset-btn" data-width="1024" data-height="1024">1024×1024</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                </div>
-
-                <!-- Saved Tiles Tab -->
-                <div class="settings-tab-content" data-tab-content="tiles">
-                    <div class="tiles-settings-content">
-                        <div class="tile-library-intro">
+                    <!-- Tile atlas -->
+                    <section class="ds-card ds-atlas-card">
+                        <div class="ds-card-head">
                             <div>
-                                <h3>Your Tile Library</h3>
-                                <p>Save several tiles in this browser, then reopen any of them for editing.</p>
+                                <h2><i class="fas fa-table-cells"></i> Tile Atlas</h2>
+                                <p id="dsAtlasSubtitle" class="ds-subtitle">Select a tile to edit it.</p>
                             </div>
-                            <div class="tile-library-browser-actions">
-                                <button type="button" class="btn" id="save-working-copy-btn"
-                                    title="Save the current tile to browser storage">
-                                    <i class="fas fa-save"></i> Save to Browser
-                                </button>
-                                <button type="button" class="btn secondary" id="restore-working-copy-btn"
-                                    title="Restore the tile last saved to browser storage">
-                                    <i class="fas fa-rotate-left"></i> Restore
-                                </button>
-                            </div>
+                            <div class="ds-badges" id="dsAtlasBadges"></div>
                         </div>
-                        <div class="tile-library-new-row">
-                            <input type="text" id="tile-name-input" maxlength="60" placeholder="Tile name"
-                                aria-label="Tile name" value="Untitled Tile">
-                            <button type="button" class="btn primary" id="save-new-tile-btn">
-                                <i class="fas fa-plus"></i> Save Current as New Tile
-                            </button>
-                            <button type="button" class="btn" id="new-blank-tile-btn"
-                                title="Start a new blank tile">
-                                <i class="fas fa-file"></i> New Blank Tile
-                            </button>
-                        </div>
-                        <div id="tile-library-list" class="tile-library-list" aria-live="polite">
-                            <!-- Saved tiles are rendered here -->
-                        </div>
-                    </div>
-                </div>
+                        <div id="dsAtlasGrid" class="ds-atlas-grid"></div>
+                        <p class="ds-hint">
+                            <i class="fas fa-circle-info"></i>
+                            Each tile is a 2×2 corner mask. The preview below shows how the set autotiles
+                            when neighbouring cells are filled or empty.
+                        </p>
+                    </section>
 
-                <!-- Export Settings Tab -->
-                <div class="settings-tab-content" data-tab-content="export">
-                    <div class="export-settings-content">
-                        <div class="settings-section">
-                            <div class="section-heading">Export Options</div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="setting-export-transparent" checked>
-                                    Export with Transparent Background
-                                </label>
+                    <!-- Tile editor -->
+                    <section class="ds-card ds-editor-card">
+                        <div class="ds-card-head">
+                            <div>
+                                <h2><i class="fas fa-paintbrush"></i> <span id="dsEditorTitle">Edit tile</span></h2>
+                                <p id="dsEditorSubtitle" class="ds-subtitle">Draw the selected dual-grid tile.</p>
                             </div>
-                            <div class="property-group">
-                                <label class="property-label">
-                                    Export Resolution:
-                                    <select id="setting-export-resolution"
-                                        style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;">
-                                        <!-- Game Asset Sizes -->
-                                        <option value="24x24">24×24 - Game Icon</option>
-                                        <option value="36x36">36×36 - Game Icon</option>
-                                        <option value="48x48">48×48 - Game Icon</option>
-                                        <option value="128x128">128×128 - Game Sprite</option>
-                                        <option value="512x512">512×512 - Game Texture</option>
-                                        <option value="1024x1024">1024×1024 - High-res Texture</option>
-
-                                        <!-- Standard Resolutions -->
-                                        <option value="1920x1080">1920×1080 - Full HD</option>
-                                        <option value="2560x1440">2560×1440 - 2K</option>
-                                        <option value="3840x2160">3840×2160 - 4K</option>
-                                        <option value="custom">Custom Size</option>
-                                    </select>
-                                </label>
-                            </div>
-                            <div class="property-group" id="custom-resolution-group" style="display: none;">
-                                <label class="property-label">
-                                    Custom Width:
-                                    <input type="number" id="setting-custom-width" value="1920" min="100" max="8000">
-                                </label>
-                                <label class="property-label">
-                                    Custom Height:
-                                    <input type="number" id="setting-custom-height" value="1080" min="100" max="8000">
-                                </label>
+                            <div class="ds-head-actions">
+                                <button id="dsCopyTileBtn" class="ds-btn ds-small" title="Copy this tile"><i class="fas fa-copy"></i><span>Copy</span></button>
+                                <button id="dsPasteTileBtn" class="ds-btn ds-small" title="Paste tile into this slot"><i class="fas fa-paste"></i><span>Paste</span></button>
+                                <button id="dsFlipHBtn" class="ds-btn ds-small" title="Flip horizontally"><i class="fas fa-arrows-left-right"></i></button>
+                                <button id="dsFlipVBtn" class="ds-btn ds-small" title="Flip vertically"><i class="fas fa-arrows-up-down"></i></button>
+                                <button id="dsClearTileBtn" class="ds-btn ds-small ds-danger" title="Clear tile"><i class="fas fa-eraser"></i><span>Clear</span></button>
                             </div>
                         </div>
 
-                        <div class="settings-section">
-                            <div class="section-heading">Settings Management</div>
-                            <div class="property-group"
-                                style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
-                                <button id="exportSettingsBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
-                                    <i class="fas fa-cloud-download-alt"></i> Export Defaults
-                                </button>
-                                <button id="saveToBrowserBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
-                                    <i class="fas fa-save"></i> Save Settings to Browser
-                                </button>
-                                <button id="loadFromBrowserBtn" class="btn secondary" style="width: 100%;">
-                                    <i class="fas fa-download"></i> Load Settings from Browser
-                                </button>
+                        <div class="ds-editor-layout">
+                            <div class="ds-editor-stage" id="dsEditorStage">
+                                <canvas id="dsEditorCanvas" width="32" height="32"></canvas>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tutorial Settings Tab -->
-                <div class="settings-tab-content" data-tab-content="tutorial">
-                    <div class="settings-content">
-
-                        <div class="settings-section">
-                            <div class="section-heading"> Tutorial Settings </div>
-
-                            <div class="property-group">
-                                <label class="property-label">
-                                    <input type="checkbox" id="enableTutorialsSettings" checked>
-                                    Enable Tutorials
-                                </label>
-                                <div
-                                    style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; margin-left: 30px;">
-                                    Show interactive tutorials on startup
+                            <div class="ds-editor-side">
+                                <div class="ds-mask-card">
+                                    <div class="ds-mask-diagram" id="dsMaskDiagram" aria-hidden="true"></div>
+                                    <div class="ds-mask-meta">
+                                        <span class="ds-label">Mask</span>
+                                        <strong id="dsMaskTitle">Fill</strong>
+                                        <span id="dsMaskBits" class="ds-bits">TL · TR · BL · BR</span>
+                                    </div>
                                 </div>
-
-                                <label class="property-label">
-                                    <input type="checkbox" id="showTutorialHints" checked>
-                                    Show Tutorial Hints
-                                </label>
-                                <div
-                                    style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; margin-left: 30px;">
-                                    Display helpful hints and tooltips
+                                <div class="ds-coords">
+                                    <span class="ds-label">Cursor</span>
+                                    <span id="dsCoords">—</span>
                                 </div>
-                                
+                                <div class="ds-tile-info" id="dsTileInfo"></div>
+                                <p class="ds-hint ds-small-hint">
+                                    Tip: enable <strong>Edge wrap</strong> to draw pixels that continue across the
+                                    tile boundary, then use the preview to check the seam.
+                                </p>
                             </div>
                         </div>
+                    </section>
 
-                        <div class="property-group"
-                            style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
-                            <button id="startTutorialBtn" class="btn" style="margin-bottom: 8px; width: 100%;">
-                                <i class="fas fa-graduation-cap"></i> Start Tutorial
-                            </button>
-                            <button id="resetTutorialBtn" class="btn secondary" style="width: 100%;">
-                                <i class="fas fa-redo"></i> Reset Tutorial Progress
-                            </button>
+                    <!-- Neighbour preview -->
+                    <section class="ds-card ds-preview-card">
+                        <div class="ds-card-head">
+                            <div>
+                                <h2><i class="fas fa-wand-magic-sparkles"></i> Neighbour Preview</h2>
+                                <p class="ds-subtitle">Paint the test map — the tileset auto-tiles it live. Left-click fills, right-click empties.</p>
+                            </div>
+                            <div class="ds-head-actions">
+                                <button id="dsRandomMapBtn" class="ds-btn ds-small" title="Generate a test map"><i class="fas fa-shuffle"></i><span>Random</span></button>
+                                <button id="dsClearMapBtn" class="ds-btn ds-small" title="Empty the test map"><i class="fas fa-square"></i><span>Empty</span></button>
+                                <button id="dsFillMapBtn" class="ds-btn ds-small" title="Fill the test map"><i class="fas fa-square-full"></i><span>Fill</span></button>
+                                <label class="ds-toggle ds-toggle-inline"><input type="checkbox" id="dsShowAllGrids" checked><span>All grids</span></label>
+                            </div>
+                        </div>
+                        <div class="ds-preview-stage" id="dsPreviewStage">
+                            <canvas id="dsPreviewCanvas" width="800" height="480"></canvas>
+                        </div>
+                        <p class="ds-hint" id="dsPreviewHint">
+                            <i class="fas fa-eye"></i>
+                            Showing every visible grid. Outer grids render below inner grids.
+                        </p>
+                    </section>
+                </div>
+            </section>
+
+            <!-- ---------- RIGHT PANEL ---------- -->
+            <aside class="ds-right ds-panel">
+                <section class="ds-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-layer-group"></i> Design Grids</h2>
+                        <button id="dsAddGridBtn" class="ds-mini-btn" title="Add grid"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="dsGridList" class="ds-grid-list"></div>
+                    <p class="ds-hint ds-small-hint">
+                        A design can hold several grids. Use an <strong>outer</strong> grid for the main
+                        terrain and an <strong>inner</strong> grid for overlays or details.
+                    </p>
+                </section>
+
+                <section class="ds-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-gear"></i> Grid Settings</h2>
+                    </div>
+                    <div class="ds-field">
+                        <label for="dsGridName">Name</label>
+                        <input id="dsGridName" type="text" maxlength="48" spellcheck="false">
+                    </div>
+                    <div class="ds-field-row">
+                        <div class="ds-field">
+                            <label for="dsGridRole">Role</label>
+                            <select id="dsGridRole">
+                                <option value="outer">Outer</option>
+                                <option value="custom">Custom</option>
+                                <option value="inner">Inner</option>
+                            </select>
+                        </div>
+                        <div class="ds-field">
+                            <label for="dsGridMode">Export set</label>
+                            <select id="dsGridMode">
+                                <option value="15">15 tiles · 4×4</option>
+                                <option value="9">9 tiles · 3×3</option>
+                            </select>
                         </div>
                     </div>
-                </div>
+                    <div class="ds-field-row">
+                        <div class="ds-field">
+                            <label for="dsTileSize">Tile size</label>
+                            <select id="dsTileSize">
+                                <option value="16">16 px</option>
+                                <option value="24">24 px</option>
+                                <option value="32">32 px</option>
+                                <option value="48">48 px</option>
+                                <option value="64">64 px</option>
+                            </select>
+                        </div>
+                        <div class="ds-field ds-field-actions">
+                            <label>&nbsp;</label>
+                            <button id="dsDuplicateGridBtn" class="ds-btn ds-small" title="Duplicate active grid"><i class="fas fa-copy"></i> Duplicate</button>
+                        </div>
+                    </div>
+                    <button id="dsDeleteGridBtn" class="ds-btn ds-small ds-danger ds-full" title="Delete active grid">
+                        <i class="fas fa-trash"></i> Delete active grid
+                    </button>
+                </section>
+
+                <section class="ds-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-file-export"></i> Export</h2>
+                    </div>
+                    <div class="ds-field">
+                        <label for="dsExportLayout">Atlas layout</label>
+                        <select id="dsExportLayout">
+                            <option value="auto">Match grid set</option>
+                            <option value="15">4×4 · 15 tiles</option>
+                            <option value="9">3×3 · 9 tiles</option>
+                        </select>
+                    </div>
+                    <div class="ds-field-row">
+                        <div class="ds-field">
+                            <label for="dsExportScale">Scale</label>
+                            <select id="dsExportScale">
+                                <option value="1">1×</option>
+                                <option value="2" selected>2×</option>
+                                <option value="4">4×</option>
+                                <option value="8">8×</option>
+                            </select>
+                        </div>
+                        <div class="ds-field">
+                            <label for="dsExportGap">Gap (px)</label>
+                            <input id="dsExportGap" type="number" min="0" max="32" step="1" value="0">
+                        </div>
+                    </div>
+                    <div class="ds-field-row">
+                        <div class="ds-field">
+                            <label for="dsExportMargin">Margin (px)</label>
+                            <input id="dsExportMargin" type="number" min="0" max="64" step="1" value="0">
+                        </div>
+                        <div class="ds-field">
+                            <label for="dsExportBg">Background</label>
+                            <div class="ds-bg-row">
+                                <input type="color" id="dsExportBg" value="#c99a63">
+                                <label class="ds-toggle ds-toggle-inline"><input type="checkbox" id="dsExportTransparent"><span>Transparent</span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="dsExportActiveBtn" class="ds-btn ds-primary ds-full"><i class="fas fa-download"></i> Export active grid</button>
+                    <div class="ds-export-row">
+                        <button id="dsExportAllBtn" class="ds-btn ds-full"><i class="fas fa-layer-group"></i> All grids</button>
+                        <button id="dsExportSheetBtn" class="ds-btn ds-full"><i class="fas fa-table-cells-large"></i> Combined sheet</button>
+                    </div>
+                    <button id="dsExportJsonBtn" class="ds-btn ds-full"><i class="fas fa-code"></i> Export project JSON</button>
+                    <p class="ds-hint ds-small-hint" id="dsExportHint">
+                        The 4×4 atlas contains 15 authored masks plus one background cell. The 3×3 atlas contains
+                        the 9 outer-edge masks.
+                    </p>
+                </section>
+
+                <section class="ds-section ds-credit-section">
+                    <div class="ds-section-head">
+                        <h2><i class="fas fa-heart"></i> Credit</h2>
+                    </div>
+                    <p class="ds-credit">
+                        Sample artwork is based on the reference image for the
+                        <a href="https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset" target="_blank"
+                            rel="noopener noreferrer">Hand-drawn Dual Grid Tileset by Kaffe Medbulla</a>.
+                    </p>
+                </section>
+            </aside>
+        </main>
+
+        <!-- ================= FOOTER ================= -->
+        <footer class="ds-footer">
+            <div class="ds-footer-left">
+                <i class="fas fa-border-all"></i>
+                <span>Dual Grid Studio</span>
+                <span class="ds-footer-dot">•</span>
+                <span id="dsFooterStatus">Ready</span>
             </div>
-            <footer>
-                <div class="modal-actions">
-                    <button class="btn" id="btn-settings-reset">Reset</button>
-                    <button class="btn" id="btn-settings-close">Close</button>
-                    <button class="btn primary" id="btn-settings-save">Save Settings</button>
+            <div class="ds-footer-right">
+                <span>Sample &amp; inspiration credit:</span>
+                <a href="https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset" target="_blank"
+                    rel="noopener noreferrer">Kaffe Medbulla — Hand-drawn Dual Grid Tileset</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+    <div class="ds-modal-overlay" id="dsNewModal" aria-hidden="true">
+        <div class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="dsNewModalTitle">
+            <header class="ds-modal-head">
+                <h2 id="dsNewModalTitle"><i class="fas fa-file-circle-plus"></i> New design</h2>
+                <button class="ds-modal-close" data-close-modal="dsNewModal" aria-label="Close"><i class="fas fa-times"></i></button>
+            </header>
+            <div class="ds-modal-body">
+                <div class="ds-field">
+                    <label for="dsNewName">Design name</label>
+                    <input id="dsNewName" type="text" maxlength="60" value="Untitled Design" spellcheck="false">
                 </div>
+                <div class="ds-field">
+                    <label for="dsNewStarter">Starter</label>
+                    <select id="dsNewStarter">
+                        <option value="demo">Sample — meadow + inner overlay</option>
+                        <option value="blank">Blank 15-tile grid</option>
+                    </select>
+                </div>
+                <p class="ds-hint">Creating a new design replaces the current autosaved work. Save the current design first if you want to keep it.</p>
+            </div>
+            <footer class="ds-modal-foot">
+                <button class="ds-btn" data-close-modal="dsNewModal">Cancel</button>
+                <button id="dsCreateNewBtn" class="ds-btn ds-primary"><i class="fas fa-check"></i> Create</button>
             </footer>
         </div>
     </div>
 
+    <div class="ds-modal-overlay" id="dsHelpModal" aria-hidden="true">
+        <div class="ds-modal ds-modal-wide" role="dialog" aria-modal="true" aria-labelledby="dsHelpModalTitle">
+            <header class="ds-modal-head">
+                <h2 id="dsHelpModalTitle"><i class="fas fa-circle-question"></i> How to use Dual Grid Studio</h2>
+                <button class="ds-modal-close" data-close-modal="dsHelpModal" aria-label="Close"><i class="fas fa-times"></i></button>
+            </header>
+            <div class="ds-modal-body ds-help-body">
+                <div>
+                    <h3><i class="fas fa-table-cells"></i> 1. Paint a tile</h3>
+                    <p>Pick a tile from the atlas, draw in the big editor, and the atlas thumbnail plus the
+                        neighbour preview update immediately. Each tile represents one corner mask.</p>
 
-    <!-- Hidden file inputs -->
-    <input type="file" id="fileInput" accept=".json" style="display: none;">
-    <input type="file" id="paletteFileInput" accept=".ase" style="display: none;">
+                    <h3><i class="fas fa-wand-magic-sparkles"></i> 2. Test neighbours</h3>
+                    <p>Paint the test map under <strong>Neighbour Preview</strong>. The preview resolves every
+                        2×2 corner mask and picks the matching tile, so you can check edges and inner corners
+                        before exporting.</p>
 
+                    <h3><i class="fas fa-layer-group"></i> 3. Build a design</h3>
+                    <p>A design can contain several grids. An <strong>outer</strong> grid renders first and an
+                        <strong>inner</strong> grid renders on top. Toggle <strong>All grids</strong> to see the
+                        composite.</p>
 
-    <!-- Core modules -->
-    <script src="js/config.js"></script>
-    <script src="js/state.js"></script>
-    <script src="js/dom.js"></script>
+                    <h3><i class="fas fa-file-export"></i> 4. Export</h3>
+                    <p>Choose a 3×3 atlas (9 outer-edge masks) or a 4×4 atlas (15 masks + one background cell).
+                        Set gap, margin, scale and background in the Export panel.</p>
+                </div>
+                <div>
+                    <h3><i class="fas fa-keyboard"></i> Shortcuts</h3>
+                    <div class="ds-shortcuts">
+                        <span><kbd>P</kbd> Pencil</span><span><kbd>B</kbd> Brush</span>
+                        <span><kbd>E</kbd> Eraser</span><span><kbd>G</kbd> Fill</span>
+                        <span><kbd>I</kbd> Picker</span><span><kbd>1–9</kbd> Pick tile</span>
+                        <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> Undo</span><span><kbd>Ctrl</kbd>+<kbd>Y</kbd> Redo</span>
+                        <span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span><span><kbd>Ctrl</kbd>+<kbd>O</kbd> Open</span>
+                        <span><kbd>[</kbd> / <kbd>]</kbd> Brush size</span><span><kbd>X</kbd> Swap colour</span>
+                    </div>
+
+                    <h3><i class="fas fa-circle-info"></i> Export layouts</h3>
+                    <p class="ds-mono">3×3 order: 1 3 2 / 5 15 10 / 4 12 8</p>
+                    <p class="ds-mono">4×4 order: mask 0 → 15, row-major</p>
+                    <p>Mask bits are <strong>TL, TR, BL, BR</strong>.</p>
+
+                    <h3><i class="fas fa-heart"></i> Credit</h3>
+                    <p>Sample artwork is based on the reference image for the
+                        <a href="https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset" target="_blank"
+                            rel="noopener noreferrer">Hand-drawn Dual Grid Tileset by Kaffe Medbulla</a>.</p>
+                </div>
+            </div>
+            <footer class="ds-modal-foot">
+                <button class="ds-btn ds-primary" data-close-modal="dsHelpModal">Got it</button>
+            </footer>
+        </div>
+    </div>
+
+    <input type="file" id="dsFileInput" accept=".json,application/json" style="display:none">
+
     <script src="js/notifications.js"></script>
-
-    <!-- UI Components -->
-    <script src="js/tooltip.js"></script>
-
-    <!-- Specialized modules -->
-    <script src="js/tilemap-core.js"></script>
-    <script src="js/floating-panel-manager.js"></script>
-    <script src="js/palette-manager.js"></script>
-    <script src="js/layer-manager.js"></script>
-    <script src="js/tool-manager.js"></script>
-    <script src="js/file-manager.js"></script>
-    <script src="js/tilemap-manager.js"></script>
-    <script src="js/tile-state-manager.js"></script>
-    <script src="js/dual-grid-manager.js"></script>
-    <script src="js/tile-library.js"></script>
-    <script src="js/settings-manager.js"></script>
-    <script src="js/zoom-manager.js"></script>
-    <script src="js/tutorialConfig.js"></script>
-    <script src="js/tutorialSystem.js"></script>
-
-    <!-- Right Panel Management -->
-    <script src="js/right-panel-manager.js"></script>
-
-    <!-- Input handling -->
-    <script src="js/input-handler.js"></script>
-    <script src="js/ui-manager.js"></script>
-
-    <!-- Main application -->
-    <script src="js/app.js"></script>
-    <script src="js/ai-provider.js" data-app-id="pixelDualTilemaps"></script>
-    <script src="js/ai-creator.js" data-app-id="pixelDualTilemaps"></script>
+    <script src="js/dual-core.js"></script>
+    <script src="js/dual-studio.js"></script>
 </body>
 
 </html>

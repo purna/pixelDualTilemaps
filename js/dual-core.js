@@ -966,7 +966,9 @@ window.DualCore = (function () {
 
         const requestedGrid = project.grids.find(grid => grid.id === data.activeGridId);
         project.activeGridId = requestedGrid ? requestedGrid.id : project.grids[0].id;
-        project.selectedMask = clamp(Number(data.selectedMask) || 0, 0, 15);
+        project.selectedMask = data.selectedMask == null
+            ? 15
+            : clamp(Number(data.selectedMask) || 0, 0, 15);
 
         return project;
     }

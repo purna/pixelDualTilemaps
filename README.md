@@ -39,8 +39,8 @@ outer-edge terrains.
 - **Expandable neighbour preview** — a dedicated toolbar can expand the preview across
   the workspace, export the active tileset PNG, and export per-group tile rules as
   Unity/Godot-friendly JSON.
-- **Centre border toggle** — a thin solid border marks the centre tile and can be
-  switched off when it gets in the way.
+- **Centre border toggle** — an optional thin dashed guide marks the centre tile and is
+  off by default so it never looks like a seam in the artwork.
 - **Tile variations** — every mask can have several variations. Duplicate the active
   variation, switch between chips, and the live preview picks variations stably by
   map position. Edits to an edge are propagated to every matching neighbour and to the

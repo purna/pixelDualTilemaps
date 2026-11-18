@@ -41,7 +41,7 @@
         wrap: true,
         syncEdges: true,
         editorZoom: 1,
-        showCenterBorder: true,
+        showCenterBorder: false,
         strokeTouched: new Map(),
         mirrorX: false,
         mirrorY: false,
@@ -1334,7 +1334,7 @@
                     if (index > 0) {
                         tile.layers.splice(index, 1);
                         tile.layers.unshift(layer);
-                        if (tile.activeLayer === index) tile.activeLayer = 0;
+                        if (tile.activeLayer === index) tile.activeLayer = 1;
                         else if (tile.activeLayer < index) tile.activeLayer += 1;
                     }
                 }

@@ -123,7 +123,7 @@
                         <label class="ds-toggle"><input type="checkbox" id="dsMirrorX"><span>Mirror X</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsMirrorY"><span>Mirror Y</span></label>
                         <label class="ds-toggle"><input type="checkbox" id="dsShowPixelGrid" checked><span>Pixel grid</span></label>
-                        <label class="ds-toggle"><input type="checkbox" id="dsCenterBorder" checked><span>Centre border</span></label>
+                        <label class="ds-toggle"><input type="checkbox" id="dsCenterBorder"><span>Centre border</span></label>
                     </div>
                 </section>
 
@@ -543,8 +543,9 @@
                         in that slot, then draw across the seam to keep it continuous. With
                         <strong>Sync edges</strong> on, the matching edge pixels are copied into every compatible
                         neighbouring mask and every variation, so the margin slots update as you paint. Use the
-                        zoom controls or <strong>Ctrl/⌘ + wheel</strong> to zoom, and toggle the thin
-                        <strong>Centre border</strong> off if it gets in the way.</p>
+                        zoom controls or <strong>Ctrl/⌘ + wheel</strong> to zoom. The dashed
+                        <strong>Centre border</strong> guide is off by default; enable it if you want the tile
+                        boundary marked.</p>
                     <p>Paint the test map under <strong>Neighbour Preview</strong>. The preview resolves every
                         2×2 corner mask and picks the matching tile. Use its toolbar to expand the preview,
                         export the tileset PNG, or export per-group tile rules for Unity or Godot.</p>

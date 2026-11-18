@@ -1469,7 +1469,8 @@ body.ds-resizing {
     top: 25%;
     width: 50%;
     height: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.92);
+    border: 1px dashed rgba(67, 217, 255, 0.85);
+    box-shadow: 0 0 0 1px rgba(4, 7, 15, 0.55);
     pointer-events: none;
     box-sizing: border-box;
 }

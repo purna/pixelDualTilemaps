@@ -103,6 +103,7 @@
             this.selectedMask = this.project.selectedMask != null ? this.project.selectedMask : 15;
             this.ensureSelectedMask();
             this.renderAll();
+            this.selectCenterTab(this.centerTab);
             this.setEditorZoom(this.editorZoom);
             this.updateCenterOutline();
             requestAnimationFrame(() => this.applyCenterSplit());
@@ -749,6 +750,10 @@
         applyCenterSplit() {
             const scroll = this.els.dsCenterScroll;
             if (!scroll) return;
+            if (this.editorFocus && this.centerTab === 'editor') {
+                scroll.style.gridTemplateColumns = 'minmax(0, 1fr)';
+                return;
+            }
             if (!window.matchMedia('(min-width: 1100px)').matches) {
                 scroll.style.gridTemplateColumns = '';
                 return;
@@ -795,6 +800,8 @@
         selectCenterTab(tab) {
             this.centerTab = tab === 'preview' ? 'preview' : 'editor';
             this.els.dsCenterScroll.dataset.centerTab = this.centerTab;
+            this.els.dsCenterScroll.classList.toggle('is-preview-tab', this.centerTab === 'preview');
+            this.els.dsCenterScroll.classList.toggle('is-editor-tab', this.centerTab === 'editor');
             this.els.dsCenterTabs.querySelectorAll('[data-center-tab]').forEach(button => {
                 const active = button.dataset.centerTab === this.centerTab;
                 button.classList.toggle('active', active);
@@ -818,7 +825,7 @@
             this.els.dsEditorFocusBtn.title = this.editorFocus
                 ? 'Restore the tile atlas and the panel split'
                 : 'Expand the tile editor and minimise the atlas';
-            if (!this.editorFocus) requestAnimationFrame(() => this.applyCenterSplit());
+            this.applyCenterSplit();
         },
 
         setPreviewFocus(enabled) {

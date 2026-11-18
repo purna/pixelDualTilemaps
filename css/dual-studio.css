@@ -950,9 +950,25 @@ body.ds-resizing {
     scrollbar-color: var(--line) transparent;
 }
 
-.ds-center-scroll[data-center-tab="preview"] {
+.ds-center-scroll[data-center-tab="preview"],
+.ds-center-scroll.is-preview-tab {
     display: flex;
     flex-direction: column;
+}
+
+.ds-center-scroll.is-preview-tab .ds-atlas-card,
+.ds-center-scroll.is-preview-tab .ds-center-splitter,
+.ds-center-scroll.is-preview-tab .ds-editor-card {
+    display: none !important;
+}
+
+.ds-center-scroll.is-preview-tab .ds-preview-card {
+    width: 100%;
+    align-self: stretch;
+}
+
+.ds-center-scroll.is-editor-tab .ds-preview-card {
+    display: none;
 }
 
 .ds-center-scroll[data-center-tab="preview"] .ds-atlas-card,

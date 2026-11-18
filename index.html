@@ -38,7 +38,7 @@
                 <button id="dsUndoBtn" class="ds-btn ds-icon-btn" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
                 <button id="dsRedoBtn" class="ds-btn ds-icon-btn" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
                 <span class="ds-sep"></span>
-                <button id="dsNewBtn" class="ds-btn" title="Start a new design"><i class="fas fa-file-circle-plus"></i><span>New</span></button>
+                <button id="dsNewBtn" class="ds-btn" title="Start a new design or load a themed example"><i class="fas fa-file-circle-plus"></i><span>New</span></button>
                 <button id="dsOpenBtn" class="ds-btn" title="Open a saved project"><i class="fas fa-folder-open"></i><span>Open</span></button>
                 <button id="dsSaveBtn" class="ds-btn" title="Download project file (Ctrl+S)"><i class="fas fa-floppy-disk"></i><span>Save</span></button>
                 <button id="dsExportBtn" class="ds-btn ds-primary" title="Jump to export options"><i class="fas fa-file-export"></i><span>Export</span></button>
@@ -402,7 +402,7 @@
                         <h2><i class="fas fa-heart"></i> Credit</h2>
                     </div>
                     <p class="ds-credit">
-                        Sample artwork is based on the reference image for the
+                        Sample and example artwork are original procedural interpretations based on the
                         <a href="https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset" target="_blank"
                             rel="noopener noreferrer">Hand-drawn Dual Grid Tileset by Kaffe Medbulla</a>.
                     </p>
@@ -441,11 +441,20 @@
                 <div class="ds-field">
                     <label for="dsNewStarter">Starter</label>
                     <select id="dsNewStarter">
-                        <option value="demo">Sample — meadow + inner overlay</option>
-                        <option value="blank">Blank 4×4 grid</option>
+                        <optgroup label="Examples">
+                            <option value="meadow">Meadow &amp; Wildflowers</option>
+                            <option value="sand">Sand Dunes &amp; Shells</option>
+                            <option value="snow">Snowfield &amp; Ice</option>
+                            <option value="dungeon">Dungeon Floor &amp; Moss</option>
+                            <option value="pebbles">Pebble Beach &amp; Foam</option>
+                            <option value="cobbles">Cobblestones &amp; Puddles</option>
+                        </optgroup>
+                        <optgroup label="Empty">
+                            <option value="blank">Blank 4×4 grid</option>
+                        </optgroup>
                     </select>
                 </div>
-                <p class="ds-hint">Creating a new design replaces the current autosaved work. Save the current design first if you want to keep it.</p>
+                <p class="ds-hint">Each example has its own tileset, inner overlay and test-map shape. Creating a new design replaces the current autosaved work, so save the current design first if you want to keep it.</p>
             </div>
             <footer class="ds-modal-foot">
                 <button class="ds-btn" data-close-modal="dsNewModal">Cancel</button>
@@ -508,7 +517,7 @@
                     <p>Mask bits are <strong>TL, TR, BL, BR</strong>.</p>
 
                     <h3><i class="fas fa-heart"></i> Credit</h3>
-                    <p>Sample artwork is based on the reference image for the
+                    <p>Sample and example artwork are original procedural interpretations based on the
                         <a href="https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset" target="_blank"
                             rel="noopener noreferrer">Hand-drawn Dual Grid Tileset by Kaffe Medbulla</a>.</p>
                 </div>

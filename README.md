@@ -59,8 +59,10 @@ outer-edge terrains.
 - **PNG export** — active grid, all grids, or a combined sheet, with configurable
   scale, gap, margin, background, and active-only or all-variation export. Also exports
   the project JSON.
-- **Sample project** — a procedural meadow/wildflower set based on the hand-drawn
-  dual-grid reference credited below.
+- **Themed examples** — six procedural starter sets: Meadow & Wildflowers, Sand Dunes
+  & Shells, Snowfield & Ice, Dungeon Floor & Moss, Pebble Beach & Foam, and
+  Cobblestones & Puddles. Each includes its own tile art, inner overlay and test-map
+  shape, inspired by the hand-drawn dual-grid reference credited below.
 
 ## Quick start
 
@@ -69,9 +71,10 @@ outer-edge terrains.
    python3 -m http.server 8080
    ```
    Then visit `http://localhost:8080`.
-2. The sample design loads automatically. Click a tile in the atlas and draw in the
-   large editor. Each half-tile margin shows a compatible neighbour at 50% opacity;
-   click its `#` label to load another compatible tile into that slot.
+2. The sample design loads automatically. Choose **New → Starter** to load any of the
+   themed examples. Click a tile in the atlas and draw in the large editor. Each
+   half-tile margin shows a compatible neighbour at 50% opacity; click its `#` label
+   to load another compatible tile into that slot.
 3. Draw across a seam. With **Sync edges** on, compatible neighbour masks and all their
    variations receive the same edge pixels, including the `#0` base fill when it has art.
 4. Watch the **Live Preview** in the right sidebar and the larger **Neighbour Preview**
@@ -144,8 +147,9 @@ Older editor modules remain in the repository but are not loaded by `index.html`
 
 ## Sample & credit
 
-The built-in sample tileset is an original procedural recreation based on the
-hand-drawn dual-grid reference image and technique from:
+The built-in sample and themed example tilesets are original procedural
+interpretations based on the hand-drawn dual-grid reference image and technique
+from:
 
 **[Hand-drawn Dual Grid Tileset by Kaffe Medbulla](https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset)**
 

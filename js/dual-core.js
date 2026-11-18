@@ -12,7 +12,7 @@ window.DualCore = (function () {
     const CREDIT = {
         label: 'Hand-drawn Dual Grid Tileset by Kaffe Medbulla',
         url: 'https://kaffemedbulla.itch.io/hand-drawn-dual-grid-tileset',
-        note: 'Sample artwork is based on the reference image for the Hand-drawn Dual Grid Tileset by Kaffe Medbulla.'
+        note: 'Sample and example artwork are original procedural interpretations based on the Hand-drawn Dual Grid Tileset reference by Kaffe Medbulla.'
     };
 
     /* ------------------------------------------------------------
@@ -404,6 +404,80 @@ window.DualCore = (function () {
         return cells;
     }
 
+    function generateDuneMap(width, height, seed) {
+        const cells = new Uint8Array(width * height);
+        const s = (seed == null ? Math.random() * 1000 : seed) | 0;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const nx = x / Math.max(1, width - 1);
+                const ny = y / Math.max(1, height - 1);
+                const ridge = Math.sin((nx * 3.2 + Math.sin(ny * 5.1 + s * 0.01) * 0.45) * 7.4 + s * 0.02) +
+                    Math.cos((ny * 2.3 - nx * 1.4) * 5.6 + s * 0.013) * 0.7;
+                cells[y * width + x] = ridge > 0.42 ? 1 : 0;
+            }
+        }
+        if (!cells.some(Boolean)) {
+            const cx = Math.floor(width / 2);
+            const cy = Math.floor(height / 2);
+            for (let y = cy - 3; y <= cy + 3; y++) {
+                for (let x = cx - 6; x <= cx + 6; x++) {
+                    if (x >= 0 && y >= 0 && x < width && y < height) cells[y * width + x] = 1;
+                }
+            }
+        }
+        return cells;
+    }
+
+    function generateRoomMap(width, height, seed) {
+        const cells = new Uint8Array(width * height);
+        const s = (seed == null ? Math.random() * 1000 : seed) | 0;
+        const rooms = [];
+        const roomCount = 5;
+
+        for (let i = 0; i < roomCount; i++) {
+            const w = 5 + Math.floor(hash(i, 1, s) * 5);
+            const h = 4 + Math.floor(hash(i, 2, s) * 3);
+            const x = 1 + Math.floor(hash(i, 3, s) * Math.max(1, width - w - 2));
+            const y = 1 + Math.floor(hash(i, 4, s) * Math.max(1, height - h - 2));
+            rooms.push({ x, y, w, h });
+            for (let yy = y; yy < y + h && yy < height; yy++) {
+                for (let xx = x; xx < x + w && xx < width; xx++) {
+                    cells[yy * width + xx] = 1;
+                }
+            }
+        }
+
+        // Carve corridors between consecutive room centres.
+        for (let i = 1; i < rooms.length; i++) {
+            const a = rooms[i - 1];
+            const b = rooms[i];
+            const ax = Math.floor(a.x + a.w / 2);
+            const ay = Math.floor(a.y + a.h / 2);
+            const bx = Math.floor(b.x + b.w / 2);
+            const by = Math.floor(b.y + b.h / 2);
+            for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) {
+                if (x >= 0 && x < width) {
+                    cells[ay * width + x] = 1;
+                    if (ay + 1 < height) cells[(ay + 1) * width + x] = 1;
+                }
+            }
+            for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) {
+                if (y >= 0 && y < height) {
+                    cells[y * width + bx] = 1;
+                    if (bx + 1 < width) cells[y * width + bx + 1] = 1;
+                }
+            }
+        }
+        return cells;
+    }
+
+    function generateThemedMap(type, width, height, seed) {
+        if (type === 'dunes') return generateDuneMap(width, height, seed);
+        if (type === 'rooms') return generateRoomMap(width, height, seed);
+        if (type === 'sparse') return generateSparseMap(width, height, seed);
+        return generateBlobMap(width, height, seed);
+    }
+
     function clearMap(grid) {
         grid.cells.fill(0);
     }
@@ -429,6 +503,454 @@ window.DualCore = (function () {
         dirtLight: '#e2bd88',
         flower: ['#ffd15c', '#ff90b3', '#fff1a8', '#d7a1ff', '#ffb45e']
     };
+
+    /* ------------------------------------------------------------
+       Example themes
+       Each theme supplies palettes, a texture pattern for the filled
+       terrain and base fill, an inner-overlay decoration, and the map
+       shape used by the live preview.
+       ------------------------------------------------------------ */
+
+    const THEMES = {
+        meadow: {
+            key: 'meadow',
+            title: 'Meadow & Wildflowers',
+            outerName: 'Meadow',
+            innerName: 'Wildflowers',
+            background: SAMPLE.dirt[0],
+            map: 'blob',
+            useGrassSample: true
+        },
+        sand: {
+            key: 'sand',
+            title: 'Sand Dunes & Shells',
+            outerName: 'Sand Dunes',
+            innerName: 'Shells & Ripples',
+            background: '#b98a52',
+            map: 'dunes',
+            filled: {
+                palette: ['#d8ad63', '#e2ba70', '#ecc985', '#d0a257'],
+                light: '#f7e0a4',
+                dark: '#b88642',
+                deep: '#966c36',
+                pattern: 'sand'
+            },
+            base: {
+                palette: ['#b3834d', '#ab7a45', '#bd8d56'],
+                light: '#cfa066',
+                dark: '#8b6137',
+                pattern: 'sand'
+            },
+            edge: { near: '#b47c3b', deep: '#85592b', spill: '#e2ba70' },
+            inner: 'shells',
+            innerColors: ['#ffe8c4', '#f7c9a1', '#fff3d7', '#e9b98b']
+        },
+        snow: {
+            key: 'snow',
+            title: 'Snowfield & Ice',
+            outerName: 'Snowfield',
+            innerName: 'Ice Sparkle',
+            background: '#40566f',
+            map: 'blob',
+            filled: {
+                palette: ['#e7f1fc', '#eff7ff', '#dceaf8', '#f6fbff'],
+                light: '#ffffff',
+                dark: '#b3cce4',
+                deep: '#8ca9c4',
+                pattern: 'snow'
+            },
+            base: {
+                palette: ['#49607a', '#40566f', '#536b85'],
+                light: '#6e88a2',
+                dark: '#2f4359',
+                pattern: 'noise'
+            },
+            edge: { near: '#9ebbd6', deep: '#6d8ba8', spill: '#f4faff' },
+            inner: 'sparkle',
+            innerColors: ['#ffffff', '#bcecff', '#d8f6ff', '#8fd8ff']
+        },
+        dungeon: {
+            key: 'dungeon',
+            title: 'Dungeon Floor & Moss',
+            outerName: 'Dungeon Floor',
+            innerName: 'Moss & Cracks',
+            background: '#17151f',
+            map: 'rooms',
+            filled: {
+                palette: ['#5b5d6b', '#66697a', '#525462', '#6e7183'],
+                light: '#888c9f',
+                dark: '#393b47',
+                deep: '#252630',
+                pattern: 'brick'
+            },
+            base: {
+                palette: ['#1d1b27', '#23212f', '#191722'],
+                light: '#302d3e',
+                dark: '#100f17',
+                pattern: 'void'
+            },
+            edge: { near: '#33313f', deep: '#19171f', spill: '#4e5f3c' },
+            inner: 'moss',
+            innerColors: ['#5f7d3d', '#76994b', '#3f5c2c', '#8cae57']
+        },
+        pebbles: {
+            key: 'pebbles',
+            title: 'Pebble Beach & Foam',
+            outerName: 'Pebble Beach',
+            innerName: 'Foam & Shells',
+            background: '#b99a63',
+            map: 'sparse',
+            filled: {
+                palette: ['#8b8b8e', '#a3a19b', '#75757a', '#b4b0a8', '#6b6b70'],
+                light: '#cecac0',
+                dark: '#55555b',
+                deep: '#3e3e44',
+                pattern: 'pebble'
+            },
+            base: {
+                palette: ['#c4a56b', '#bb9b62', '#ccad74'],
+                light: '#dbbd84',
+                dark: '#a3824e',
+                pattern: 'sand'
+            },
+            edge: { near: '#6c6a63', deep: '#4a4845', spill: '#a3a19b' },
+            inner: 'foam',
+            innerColors: ['#f5fbff', '#c8ecff', '#e8f9ff', '#ffffff']
+        },
+        cobbles: {
+            key: 'cobbles',
+            title: 'Cobblestones & Puddles',
+            outerName: 'Cobblestones',
+            innerName: 'Puddles & Moss',
+            background: '#3f4930',
+            map: 'blob',
+            filled: {
+                palette: ['#7d7a72', '#8d897f', '#6c6962', '#9b968a', '#615f59'],
+                light: '#b6b0a2',
+                dark: '#4e4c47',
+                deep: '#35342f',
+                pattern: 'cobble'
+            },
+            base: {
+                palette: ['#4e5a34', '#45502e', '#58663a'],
+                light: '#6d7c45',
+                dark: '#354024',
+                pattern: 'noise'
+            },
+            edge: { near: '#44483a', deep: '#292c24', spill: '#78894c' },
+            inner: 'puddles',
+            innerColors: ['#74c4d8', '#a3e6ef', '#4b9db6', '#d9fbff']
+        }
+    };
+
+    const EXAMPLE_THEMES = ['meadow', 'sand', 'snow', 'dungeon', 'pebbles', 'cobbles'];
+
+    function themeTextureColor(theme, layer, role, x, y, seed) {
+        const palette = layer.palette;
+        const h = hash(x, y, seed);
+        const pattern = layer.pattern || 'noise';
+
+        if (pattern === 'sand') {
+            const wave = Math.sin((x + Math.sin(y * 0.42 + seed * 0.011) * 2.2) * 0.62 + seed * 0.03);
+            if (wave > 0.58) return palette[2] || layer.light;
+            if (wave < -0.62) return palette[0];
+            return h > 0.74 ? (palette[3] || layer.light) : palette[Math.floor(h * palette.length)];
+        }
+
+        if (pattern === 'snow') {
+            const drift = Math.sin(x * 0.33 + Math.sin(y * 0.27 + seed * 0.02) * 1.9 + seed * 0.015);
+            if (h > 0.955) return layer.light;
+            if (drift < -0.7) return palette[2] || palette[0];
+            if (drift > 0.72) return palette[3] || layer.light;
+            return palette[Math.floor(h * palette.length)];
+        }
+
+        if (pattern === 'void') {
+            if (h > 0.982) return layer.light;
+            if (h < 0.025) return layer.dark;
+            return palette[Math.floor(h * palette.length)];
+        }
+
+        if (pattern === 'brick' && role === 'filled') {
+            const row = Math.floor(y / 6);
+            const offset = (row % 2) * 5;
+            const bx = (x + offset) % 10;
+            const by = y % 6;
+            const block = hash(Math.floor((x + offset) / 10), row, seed);
+            if (by === 0 || bx === 0) return layer.deep;
+            if (by === 1 || bx === 1) return block > 0.55 ? layer.light : layer.palette[1];
+            return palette[Math.floor(block * palette.length)];
+        }
+
+        return palette[Math.floor(h * palette.length)];
+    }
+
+    function pebbleTextureColor(theme, x, y, seed) {
+        const cell = 7;
+        const gx = Math.floor(x / cell);
+        const gy = Math.floor(y / cell);
+        let best = null;
+        for (let oy = -1; oy <= 1; oy++) {
+            for (let ox = -1; ox <= 1; ox++) {
+                const cx = gx + ox;
+                const cy = gy + oy;
+                const px = (cx + 0.18 + hash(cx, cy, seed + 1) * 0.64) * cell;
+                const py = (cy + 0.18 + hash(cx, cy, seed + 2) * 0.64) * cell;
+                const d = Math.hypot(x + 0.5 - px, y + 0.5 - py);
+                if (!best || d < best.d) best = { d, px, py, cx, cy };
+            }
+        }
+        const radius = cell * 0.38 + hash(best.cx, best.cy, seed + 3) * cell * 0.09;
+        if (best.d >= radius) return theme.filled.dark;
+        const color = theme.filled.palette[Math.floor(hash(best.cx, best.cy, seed + 4) * theme.filled.palette.length)];
+        if (best.d > radius - 1.25 && x <= best.px && y <= best.py) return theme.filled.light;
+        return color;
+    }
+
+    function cobbleTextureColor(theme, x, y, seed) {
+        const cell = 9;
+        const gx = Math.floor(x / cell);
+        const gy = Math.floor(y / cell);
+        let d1 = Infinity;
+        let d2 = Infinity;
+        let best = null;
+        for (let oy = -1; oy <= 1; oy++) {
+            for (let ox = -1; ox <= 1; ox++) {
+                const cx = gx + ox;
+                const cy = gy + oy;
+                const px = (cx + 0.15 + hash(cx, cy, seed + 7) * 0.7) * cell;
+                const py = (cy + 0.15 + hash(cx, cy, seed + 8) * 0.7) * cell;
+                const d = Math.hypot(x + 0.5 - px, y + 0.5 - py);
+                if (d < d1) {
+                    d2 = d1;
+                    d1 = d;
+                    best = { px, py, cx, cy };
+                } else if (d < d2) {
+                    d2 = d;
+                }
+            }
+        }
+        if (d2 - d1 < 1.3) return theme.filled.deep;
+        const color = theme.filled.palette[Math.floor(hash(best.cx, best.cy, seed + 9) * theme.filled.palette.length)];
+        if (d1 < 2.3 && x <= best.px && y <= best.py) return theme.filled.light;
+        if (d1 > cell * 0.58) return theme.filled.dark;
+        return color;
+    }
+
+    function paintExampleOuterTile(ctx, size, mask, seed, theme) {
+        const image = ctx.createImageData(size, size);
+        const data = image.data;
+        const filled = new Uint8Array(size * size);
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                filled[y * size + x] = isFilled(mask, x, y, size) ? 1 : 0;
+            }
+        }
+
+        if (popcount(mask) === 3) {
+            const radius = Math.max(2, size / 8);
+            const cx = size / 2;
+            const cy = size / 2;
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const dx = x + 0.5 - cx;
+                    const dy = y + 0.5 - cy;
+                    if (dx * dx + dy * dy <= radius * radius) filled[y * size + x] = 0;
+                }
+            }
+        }
+
+        const at = (x, y) => (x >= 0 && y >= 0 && x < size && y < size ? filled[y * size + x] : -1);
+        const has = (x, y, value) => at(x, y) === value;
+        const near = (x, y, distance, value) => {
+            for (let d = 1; d <= distance; d++) {
+                if (has(x - d, y, value) || has(x + d, y, value) ||
+                    has(x, y - d, value) || has(x, y + d, value)) return true;
+            }
+            return false;
+        };
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const index = y * size + x;
+                const isTerrain = filled[index] === 1;
+                const layer = isTerrain ? theme.filled : theme.base;
+                const h = hash(x, y, seed + mask * 31);
+                let color;
+
+                if (isTerrain && layer.pattern === 'pebble') {
+                    color = pebbleTextureColor(theme, x, y, seed + mask * 31);
+                } else if (isTerrain && layer.pattern === 'cobble') {
+                    color = cobbleTextureColor(theme, x, y, seed + mask * 31);
+                } else {
+                    color = themeTextureColor(theme, layer, isTerrain ? 'filled' : 'base', x, y, seed + mask * 31);
+                }
+
+                if (isTerrain) {
+                    if (near(x, y, 1, 0)) {
+                        color = h > 0.55 ? theme.edge.near : theme.edge.deep;
+                    } else if (near(x, y, 2, 0)) {
+                        color = h > 0.5 ? layer.light : theme.edge.near;
+                    }
+                } else {
+                    const touches = near(x, y, 1, 1);
+                    if (touches && h > 0.38) {
+                        color = h > 0.72 ? theme.edge.spill : theme.base.dark;
+                    } else if (near(x, y, 2, 1)) {
+                        color = h > 0.5 ? theme.base.light : theme.base.palette[0];
+                    }
+                }
+
+                const rgb = hexToRgb(color);
+                const p = index * 4;
+                data[p] = rgb.r;
+                data[p + 1] = rgb.g;
+                data[p + 2] = rgb.b;
+                data[p + 3] = 255;
+            }
+        }
+
+        ctx.putImageData(image, 0, 0);
+
+        // Theme detail pass: moss on dungeon edges, snow sparkle, sand grit.
+        const details = Math.max(3, Math.round(size * size / 220));
+        for (let i = 0; i < details; i++) {
+            const x = Math.floor(hash(i + 5, mask, seed + 41) * size);
+            const y = Math.floor(hash(i + 13, mask, seed + 47) * size);
+            if (!filled[y * size + x]) continue;
+            const h = hash(x, y, seed + 53);
+            if (theme.key === 'dungeon' && near(x, y, 1, 0) && h > 0.35) {
+                ctx.fillStyle = theme.innerColors[Math.floor(h * theme.innerColors.length)];
+                ctx.fillRect(x, y, 1, 1);
+                if (h > 0.8) ctx.fillRect(x + 1, y, 1, 1);
+            } else if (theme.key === 'snow' && h > 0.7) {
+                ctx.fillStyle = h > 0.9 ? '#ffffff' : theme.filled.light;
+                ctx.fillRect(x, y, 1, 1);
+            } else if (theme.key === 'sand' && h > 0.75) {
+                ctx.fillStyle = h > 0.9 ? theme.filled.dark : theme.filled.light;
+                ctx.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+
+    function paintExampleBaseTile(ctx, size, seed, theme) {
+        const image = ctx.createImageData(size, size);
+        const data = image.data;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const h = hash(x, y, seed + 911);
+                let color = themeTextureColor(theme, theme.base, 'base', x, y, seed + 911);
+                if (h > 0.945) color = theme.base.light;
+                else if (h < 0.045) color = theme.base.dark;
+                const rgb = hexToRgb(color);
+                const index = (y * size + x) * 4;
+                data[index] = rgb.r;
+                data[index + 1] = rgb.g;
+                data[index + 2] = rgb.b;
+                data[index + 3] = 255;
+            }
+        }
+        ctx.putImageData(image, 0, 0);
+
+        if (theme.key === 'snow') {
+            for (let i = 0; i < Math.max(2, Math.round(size / 10)); i++) {
+                const x = Math.floor(hash(i + 3, 0, seed + 19) * size);
+                const y = Math.floor(hash(i + 17, 0, seed + 23) * size);
+                ctx.fillStyle = hash(x, y, seed + 29) > 0.5 ? '#5f7b95' : '#7f9bb5';
+                ctx.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+
+    function paintExampleInnerTile(ctx, size, mask, seed, theme) {
+        ctx.clearRect(0, 0, size, size);
+        const filled = new Uint8Array(size * size);
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                filled[y * size + x] = isFilled(mask, x, y, size) ? 1 : 0;
+            }
+        }
+
+        // Sparse texture so the overlay reads as a layer even between motifs.
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                if (!filled[y * size + x]) continue;
+                const h = hash(x, y, seed + mask * 17);
+                if (h > 0.975) {
+                    ctx.fillStyle = theme.innerColors[Math.floor(h * theme.innerColors.length)];
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+
+        const clusters = Math.max(4, Math.round(size / 8));
+        for (let i = 0; i < clusters; i++) {
+            const x = Math.floor(hash(i + 5, mask, seed + 3) * size);
+            const y = Math.floor(hash(i + 17, mask, seed + 7) * size);
+            if (!filled[y * size + x]) continue;
+            const color = theme.innerColors[Math.floor(hash(i, mask, seed + 11) * theme.innerColors.length)];
+            const dark = theme.innerColors[Math.floor(hash(i + 2, mask, seed + 13) * theme.innerColors.length)];
+
+            if (theme.inner === 'shells') {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 2, 2);
+                ctx.fillStyle = dark;
+                ctx.fillRect(x, y + 1, 1, 1);
+                ctx.fillStyle = '#fff6e6';
+                ctx.fillRect(x + 1, y, 1, 1);
+            } else if (theme.inner === 'sparkle') {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 1, 1);
+                ctx.fillRect(x - 1, y, 1, 1);
+                ctx.fillRect(x + 1, y, 1, 1);
+                ctx.fillRect(x, y - 1, 1, 1);
+                ctx.fillRect(x, y + 1, 1, 1);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x, y, 1, 1);
+            } else if (theme.inner === 'moss') {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 2, 1);
+                ctx.fillRect(x + 1, y + 1, 1, 1);
+                ctx.fillStyle = dark;
+                ctx.fillRect(x + 2, y + 1, 1, 1);
+                if (hash(x, y, seed + 17) > 0.5) ctx.fillRect(x, y + 1, 1, 1);
+            } else if (theme.inner === 'foam') {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 2, 1);
+                ctx.fillRect(x + 1, y + 1, 1, 1);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x, y, 1, 1);
+            } else if (theme.inner === 'puddles') {
+                const w = 2 + Math.floor(hash(i, mask, seed + 19) * 3);
+                const hgt = 1 + Math.floor(hash(i + 1, mask, seed + 23) * 2);
+                ctx.fillStyle = 'rgba(79, 156, 178, 0.8)';
+                ctx.fillRect(x, y, w, hgt);
+                ctx.fillStyle = color;
+                ctx.fillRect(x + 1, y, Math.max(1, w - 2), 1);
+                ctx.fillStyle = '#e8fdff';
+                ctx.fillRect(x + 1, y, 1, 1);
+            }
+        }
+    }
+
+    function paintExampleTiles(grid, kind, size, theme) {
+        grid.tiles.forEach((tile, mask) => {
+            const layer = tile.layers[0];
+            layer.canvas.width = size;
+            layer.canvas.height = size;
+            const ctx = layer.canvas.getContext('2d');
+            const seed = theme.key === 'dungeon' ? 911 : (theme.key === 'snow' ? 377 : 619);
+            if (mask === 0) {
+                if (kind === 'outer') paintExampleBaseTile(ctx, size, seed, theme);
+                else ctx.clearRect(0, 0, size, size);
+                return;
+            }
+            if (kind === 'inner') paintExampleInnerTile(ctx, size, mask, seed, theme);
+            else paintExampleOuterTile(ctx, size, mask, seed, theme);
+        });
+        invalidateGrid(grid);
+    }
 
     function quadrantBit(mask, x, y, size) {
         const left = x < size / 2;
@@ -634,7 +1156,12 @@ window.DualCore = (function () {
         });
     }
 
-    function paintSampleTiles(grid, kind, size) {
+    function paintSampleTiles(grid, kind, size, theme) {
+        const activeTheme = theme || THEMES.meadow;
+        if (!activeTheme.useGrassSample) {
+            paintExampleTiles(grid, kind, size, activeTheme);
+            return;
+        }
         grid.tiles.forEach((tile, mask) => {
             const layer = tile.layers[0];
             layer.canvas.width = size;
@@ -664,35 +1191,36 @@ window.DualCore = (function () {
         const mapH = opts.mapH || 14;
         const size = opts.tileSize || 32;
         const seed = opts.seed == null ? 2024 : opts.seed;
+        const theme = THEMES[opts.theme] || THEMES.meadow;
 
         const outer = createGrid({
-            name: 'Meadow',
+            name: theme.outerName,
             role: 'outer',
             mode: 15,
             size,
             mapW,
             mapH
         });
-        paintSampleTiles(outer, 'outer', size);
-        outer.cells = generateBlobMap(mapW, mapH, seed);
+        paintSampleTiles(outer, 'outer', size, theme);
+        outer.cells = generateThemedMap(theme.map, mapW, mapH, seed);
 
         const inner = createGrid({
-            name: 'Wildflowers',
+            name: theme.innerName,
             role: 'inner',
             mode: 9,
             size,
             mapW,
             mapH
         });
-        paintSampleTiles(inner, 'inner', size);
+        paintSampleTiles(inner, 'inner', size, theme);
         inner.cells = generateSparseMap(mapW, mapH, seed + 91);
 
         const project = createProject({
-            name: opts.name || 'Meadow & Wildflowers — Sample',
+            name: opts.name || `${theme.title} — Sample`,
             tileSize: size,
             mapW,
             mapH,
-            background: SAMPLE.dirt[0]
+            background: theme.background
         });
         project.grids = [outer, inner];
         project.activeGridId = outer.id;
@@ -1129,6 +1657,8 @@ window.DualCore = (function () {
         MASK_NAMES,
         MASK_SHORT,
         SAMPLE,
+        THEMES,
+        EXAMPLE_THEMES,
         uid,
         clamp,
         makeCanvas,
@@ -1157,6 +1687,7 @@ window.DualCore = (function () {
         resolveMask,
         generateBlobMap,
         generateSparseMap,
+        generateThemedMap,
         clearMap,
         fillMap,
         resizeGridTiles,

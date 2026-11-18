@@ -2732,9 +2732,10 @@
         async createNewDesign() {
             const name = (this.els.dsNewName.value || '').trim() || 'Untitled Design';
             const starter = this.els.dsNewStarter.value;
+            const theme = Core.THEMES[starter];
             this.project = starter === 'blank'
                 ? Core.createBlankProject({ name })
-                : Core.createSampleProject({ name });
+                : Core.createSampleProject({ name, theme: theme ? theme.key : 'meadow' });
 
             this.selectedMask = 15;
             this.ensureSelectedMask();
@@ -2743,7 +2744,9 @@
             this.saveAutosave();
             this.closeModal('dsNewModal');
             this.updateFooter();
-            this.notify('success', `${starter === 'blank' ? 'Blank design' : 'Sample design'} created`);
+            this.notify('success', starter === 'blank'
+                ? 'Blank design created'
+                : `${theme ? theme.title : 'Sample'} example created`);
         },
 
         /* --------------------------------------------------------

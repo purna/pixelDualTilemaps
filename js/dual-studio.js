@@ -129,6 +129,7 @@
 
             els.dsProjectName.addEventListener('input', (e) => {
                 this.project.name = e.target.value.trim() || 'Untitled Design';
+                document.title = `${this.project.name} — Dual Grid Studio`;
                 this.markDirty();
             });
 
@@ -270,6 +271,7 @@
                 this.renderGridList();
                 this.renderPreview();
                 this.renderExportHint();
+                this.updateFooter();
                 this.markDirty();
             });
             els.dsTileSize.addEventListener('change', (e) => this.changeTileSize(parseInt(e.target.value, 10)));
@@ -1098,6 +1100,7 @@
             if (document.activeElement !== this.els.dsProjectName) {
                 this.els.dsProjectName.value = this.project.name;
             }
+            document.title = `${this.project.name} — Dual Grid Studio`;
         },
 
         renderAtlas() {
@@ -1177,7 +1180,7 @@
             const count = grid.mode === 9 ? 9 : 15;
             this.els.dsAtlasSubtitle.textContent =
                 `${grid.name} · ${count} authored tiles · ${this.tileSize()} px` +
-                (grid.mode === 9 ? ' · 9-tile outer set' : ' · 15-tile full set');
+                (grid.mode === 9 ? ' · 9-tile set' : ' · 15-tile full set');
 
             this.els.dsAtlasBadges.innerHTML = '';
             const roleBadge = document.createElement('span');
@@ -1393,8 +1396,10 @@
                 const ctx = thumb.getContext('2d');
                 ctx.imageSmoothingEnabled = false;
                 ctx.clearRect(0, 0, 34, 34);
-                ctx.fillStyle = this.project.background || '#c99a63';
-                ctx.fillRect(0, 0, 34, 34);
+                if (grid.role === 'outer') {
+                    ctx.fillStyle = this.project.background || '#c99a63';
+                    ctx.fillRect(0, 0, 34, 34);
+                }
 
                 masks.forEach((mask, index) => {
                     const tileCanvas = Core.getTileCanvas(grid, mask);

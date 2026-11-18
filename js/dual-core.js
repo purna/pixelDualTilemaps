@@ -374,7 +374,17 @@ window.DualCore = (function () {
             }
         }
 
-        const at = (x, y) => (x >= 0 && y >= 0 && x < size && y < size ? filled[y * size + x] : 0);
+        // -1 means “outside this tile”: ignore it instead of drawing a seam
+        // along the tile edge, so neighbouring dual tiles stay continuous.
+        const at = (x, y) => (x >= 0 && y >= 0 && x < size && y < size ? filled[y * size + x] : -1);
+        const has = (x, y, value) => at(x, y) === value;
+        const near = (x, y, distance, value) => {
+            for (let d = 1; d <= distance; d++) {
+                if (has(x - d, y, value) || has(x + d, y, value) ||
+                    has(x, y - d, value) || has(x, y + d, value)) return true;
+            }
+            return false;
+        };
 
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
@@ -386,10 +396,10 @@ window.DualCore = (function () {
                 if (isGrass) {
                     color = pick(SAMPLE.grass, Math.floor(h * SAMPLE.grass.length));
 
-                    // Dark seam along an internal grass/dirt boundary.
-                    if (!at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1)) {
+                    // Dark seam only along an internal grass/dirt boundary.
+                    if (near(x, y, 1, 0)) {
                         color = h > 0.7 ? SAMPLE.grassDark : SAMPLE.grassDeep;
-                    } else if (!at(x - 2, y) || !at(x + 2, y) || !at(x, y - 2) || !at(x, y + 2)) {
+                    } else if (near(x, y, 2, 0)) {
                         color = h > 0.42 ? SAMPLE.grassLight : SAMPLE.grass[1];
                     } else if (h > 0.94) {
                         color = SAMPLE.grassLight;
@@ -398,7 +408,7 @@ window.DualCore = (function () {
                     color = pick(SAMPLE.dirt, Math.floor(h * SAMPLE.dirt.length));
 
                     // Shadow and a few grass tufts spilling onto the dirt.
-                    const touchesGrass = at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1);
+                    const touchesGrass = near(x, y, 1, 1);
                     if (touchesGrass && h > 0.36) {
                         color = SAMPLE.dirtDark;
                     } else if (touchesGrass && h > 0.24) {
@@ -547,7 +557,6 @@ window.DualCore = (function () {
         const outer = createGrid({
             name: 'Outer Terrain', role: 'outer', mode: 15, size, mapW, mapH
         });
-        outer.cells = generateBlobMap(mapW, mapH, 91);
 
         const inner = createGrid({
             name: 'Inner Detail', role: 'inner', mode: 9, size, mapW, mapH

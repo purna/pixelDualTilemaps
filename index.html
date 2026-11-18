@@ -200,6 +200,7 @@
                                 <div class="ds-canvas-wrap" id="dsCanvasWrap">
                                     <canvas id="dsEditorCanvas" width="64" height="64"></canvas>
                                     <div class="ds-center-outline" id="dsCenterOutline" aria-hidden="true"></div>
+                                    <div id="dsNeighbourLabels" class="ds-neighbour-labels"></div>
                                 </div>
                             </div>
                             <div class="ds-editor-side">
@@ -217,9 +218,10 @@
                                 </div>
                                 <div class="ds-tile-info" id="dsTileInfo"></div>
                                 <p class="ds-hint ds-small-hint">
-                                    The margin shows the neighbouring half at 50% opacity. Draw across a
-                                    seam — with <strong>Sync edges</strong> on, the matching edge is copied
-                                    into every neighbouring variation too.
+                                    Each margin shows a compatible neighbour at 50% opacity. Click its
+                                    <strong>#</strong> label to load another tile that connects there. Draw
+                                    across a seam — with <strong>Sync edges</strong> on, the matching edge is
+                                    copied into every compatible neighbour and variation.
                                 </p>
                             </div>
                         </div>
@@ -462,17 +464,20 @@
                 <div>
                     <h3><i class="fas fa-table-cells"></i> 1. Paint a tile</h3>
                     <p>Pick a tile from the atlas, draw in the big editor, and the atlas thumbnail plus the
-                        neighbour preview update immediately. Each tile represents one corner mask.</p>
+                        neighbour preview update immediately. Each tile represents one corner mask, and
+                        <strong>#0</strong> is the editable base/background fill (the sample uses brown dirt).</p>
                     <p>Use the <strong>Variations</strong> bar to create alternate art for the same mask.
                         The live preview picks variations stably by map position, and edge sync keeps every
                         variation seamless.</p>
 
                     <h3><i class="fas fa-wand-magic-sparkles"></i> 2. Test neighbours</h3>
-                    <p>The editor shows the centre tile at full size with a half-tile margin at 50% opacity.
-                        Draw across a seam to keep it continuous. With <strong>Sync edges</strong> on, the
-                        matching edge pixels are copied into every compatible neighbouring mask and every
-                        variation. Use the zoom controls or <strong>Ctrl/⌘ + wheel</strong> to zoom, and toggle
-                        the thin <strong>Centre border</strong> off if it gets in the way.</p>
+                    <p>The editor shows the centre tile at full size with compatible neighbours around it
+                        at 50% opacity. Click a margin's <strong>#</strong> label to load any tile that connects
+                        in that slot, then draw across the seam to keep it continuous. With
+                        <strong>Sync edges</strong> on, the matching edge pixels are copied into every compatible
+                        neighbouring mask and every variation, so the margin slots update as you paint. Use the
+                        zoom controls or <strong>Ctrl/⌘ + wheel</strong> to zoom, and toggle the thin
+                        <strong>Centre border</strong> off if it gets in the way.</p>
                     <p>Paint the test map under <strong>Neighbour Preview</strong>. The preview resolves every
                         2×2 corner mask and picks the matching tile, so you can check edges and inner corners
                         before exporting.</p>

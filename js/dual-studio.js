@@ -10,6 +10,17 @@
     const PALETTE_KEY = 'pixelDualTilemaps:dual-studio:palette:v2';
     const RECENT_KEY = 'pixelDualTilemaps:dual-studio:recent:v2';
 
+    const NEIGHBOURS = [
+        { key: 'tl', label: 'Top-left', col: -1, row: -1, pairs: [[1, 8]] },
+        { key: 'top', label: 'Top', col: 0, row: -1, pairs: [[1, 4], [2, 8]] },
+        { key: 'tr', label: 'Top-right', col: 1, row: -1, pairs: [[2, 4]] },
+        { key: 'left', label: 'Left', col: -1, row: 0, pairs: [[1, 2], [4, 8]] },
+        { key: 'right', label: 'Right', col: 1, row: 0, pairs: [[2, 1], [8, 4]] },
+        { key: 'bl', label: 'Bottom-left', col: -1, row: 1, pairs: [[4, 2]] },
+        { key: 'bottom', label: 'Bottom', col: 0, row: 1, pairs: [[4, 1], [8, 2]] },
+        { key: 'br', label: 'Bottom-right', col: 1, row: 1, pairs: [[8, 1]] }
+    ];
+
     const DEFAULT_PALETTE = [
         '#6fb63a', '#3f7a1f', '#9ade58', '#c99a63',
         '#a57645', '#e2bd88', '#ffd15c', '#ff90b3',
@@ -34,6 +45,8 @@
         mirrorY: false,
         showPixelGrid: true,
         showAllGrids: true,
+        neighbourChoices: {},
+        neighbourPicker: null,
         palette: DEFAULT_PALETTE.slice(),
         recentColors: [],
         clipboardTile: null,
@@ -73,7 +86,7 @@
                 this.project = Core.createSampleProject();
             }
 
-            this.selectedMask = this.project.selectedMask || 15;
+            this.selectedMask = this.project.selectedMask != null ? this.project.selectedMask : 15;
             this.ensureSelectedMask();
             this.renderAll();
             this.setEditorZoom(this.editorZoom);
@@ -98,7 +111,7 @@
                 'dsSaveColorBtn', 'dsPalette', 'dsRecentColors', 'dsAddLayerBtn', 'dsDuplicateLayerBtn',
                 'dsDeleteLayerBtn', 'dsLayerOpacityWrap', 'dsLayerOpacity', 'dsLayerOpacityLabel', 'dsLayers',
                 'dsAtlasGrid', 'dsAtlasSubtitle', 'dsAtlasBadges', 'dsEditorCanvas', 'dsEditorStage',
-                'dsCanvasWrap', 'dsCenterOutline',
+                'dsCanvasWrap', 'dsCenterOutline', 'dsNeighbourLabels',
                 'dsEditorTitle', 'dsEditorSubtitle', 'dsCopyTileBtn', 'dsPasteTileBtn', 'dsFlipHBtn',
                 'dsFlipVBtn', 'dsClearTileBtn', 'dsMaskDiagram', 'dsMaskTitle', 'dsMaskBits',
                 'dsCoords', 'dsTileInfo', 'dsPreviewCanvas', 'dsMiniPreviewCanvas', 'dsPreviewStage', 'dsPreviewHint',
@@ -233,14 +246,14 @@
             // Atlas
             els.dsAtlasGrid.addEventListener('click', (e) => {
                 const cell = e.target.closest('.ds-atlas-cell');
-                if (!cell || cell.classList.contains('is-empty')) return;
+                if (!cell) return;
                 const mask = parseInt(cell.dataset.mask, 10);
                 if (Number.isInteger(mask)) this.selectMask(mask);
             });
 
             els.dsAtlasList.addEventListener('click', (e) => {
                 const row = e.target.closest('.ds-atlas-list-item');
-                if (!row || row.classList.contains('is-empty')) return;
+                if (!row) return;
                 const mask = parseInt(row.dataset.mask, 10);
                 if (Number.isInteger(mask)) this.selectMask(mask);
             });
@@ -253,6 +266,19 @@
             editor.addEventListener('pointercancel', (e) => this.onEditorPointerUp(e));
             editor.addEventListener('pointerleave', (e) => this.onEditorPointerLeave(e));
             editor.addEventListener('contextmenu', (e) => e.preventDefault());
+            els.dsNeighbourLabels.addEventListener('click', (e) => {
+                const chip = e.target.closest('.ds-neighbour-chip');
+                if (!chip) return;
+                e.preventDefault();
+                e.stopPropagation();
+                this.openNeighbourPicker(chip.dataset.key, chip);
+            });
+            document.addEventListener('pointerdown', (e) => {
+                if (!this.neighbourPicker) return;
+                if (this.neighbourPicker.contains(e.target)) return;
+                if (e.target.closest && e.target.closest('.ds-neighbour-chip')) return;
+                this.closeNeighbourPicker();
+            });
 
             // Tile actions
             els.dsCopyTileBtn.addEventListener('click', () => this.copyTile());
@@ -373,12 +399,82 @@
         ensureSelectedMask() {
             const grid = this.activeGrid();
             if (!grid) return;
-            if (this.selectedMask === 0) this.selectedMask = 15;
             if (grid.mode === 9 && !Core.SET_9.has(this.selectedMask)) {
                 this.selectedMask = 15;
             }
             if (!grid.tiles[this.selectedMask]) this.selectedMask = 15;
             this.project.selectedMask = this.selectedMask;
+        },
+
+        maskHasArt(grid, mask) {
+            const tile = grid && grid.tiles[mask];
+            if (!tile || !Array.isArray(tile.layers)) return false;
+            return tile.layers.some(layer => {
+                if (!layer.canvas || layer.system || layer.name === 'Edge sync') return false;
+                const data = layer.canvas.getContext('2d')
+                    .getImageData(0, 0, layer.canvas.width, layer.canvas.height).data;
+                for (let i = 3; i < data.length; i += 4) {
+                    if (data[i]) return true;
+                }
+                return false;
+            });
+        },
+
+        compatibleNeighbours(direction, sourceMask) {
+            const info = NEIGHBOURS.find(item => item.key === direction);
+            if (!info) return [];
+            let required = 0;
+            let keyMask = 0;
+            info.pairs.forEach(([sourceBit, targetBit]) => {
+                keyMask |= targetBit;
+                if (sourceMask & sourceBit) required |= targetBit;
+            });
+
+            const options = [];
+            for (let mask = 0; mask <= 15; mask++) {
+                if ((mask & keyMask) !== required) continue;
+                if (this.activeGrid() && this.activeGrid().mode === 9 && mask !== 0 && !Core.SET_9.has(mask)) continue;
+                options.push(mask);
+            }
+            return options;
+        },
+
+        defaultNeighbourMask(direction, sourceMask) {
+            const tl = sourceMask & 1;
+            const tr = sourceMask & 2;
+            const bl = sourceMask & 4;
+            const br = sourceMask & 8;
+            if (direction === 'top') return tl | tr | (tl ? 4 : 0) | (tr ? 8 : 0);
+            if (direction === 'bottom') return bl | br | (bl ? 1 : 0) | (br ? 2 : 0);
+            if (direction === 'left') return tl | bl | (tl ? 2 : 0) | (bl ? 8 : 0);
+            if (direction === 'right') return tr | br | (tr ? 1 : 0) | (br ? 4 : 0);
+            if (direction === 'tl') return tl ? 15 : 0;
+            if (direction === 'tr') return tr ? 15 : 0;
+            if (direction === 'bl') return bl ? 15 : 0;
+            if (direction === 'br') return br ? 15 : 0;
+            return 0;
+        },
+
+        neighbourMaskFor(direction) {
+            const grid = this.activeGrid();
+            if (!grid) return 0;
+            const options = this.compatibleNeighbours(direction, this.selectedMask);
+            const key = `${grid.id}:${this.selectedMask}:${direction}`;
+            const stored = this.neighbourChoices[key];
+            if (stored != null && options.includes(stored)) return stored;
+            const fallback = this.defaultNeighbourMask(direction, this.selectedMask);
+            return options.includes(fallback) ? fallback : (options[0] == null ? 0 : options[0]);
+        },
+
+        setNeighbourMask(direction, mask) {
+            const grid = this.activeGrid();
+            if (!grid) return;
+            const options = this.compatibleNeighbours(direction, this.selectedMask);
+            if (!options.includes(mask)) return;
+            this.neighbourChoices[`${grid.id}:${this.selectedMask}:${direction}`] = mask;
+            this.closeNeighbourPicker();
+            this.renderEditor();
+            this.notify('info', `${NEIGHBOURS.find(item => item.key === direction).label} neighbour set to tile #${mask}`);
         },
 
         setFooter(text) {
@@ -569,19 +665,34 @@
             const internal = size * 2;
             if (gx < 0 || gy < 0 || gx >= internal || gy >= internal) return null;
 
-            const mapAxis = (value) => {
-                if (value < half) return value + half;
-                if (value >= half + size) return value - half - size;
-                return value - half;
-            };
+            const col = gx < half ? -1 : (gx >= half + size ? 1 : 0);
+            const row = gy < half ? -1 : (gy >= half + size ? 1 : 0);
 
-            return {
-                x: mapAxis(gx),
-                y: mapAxis(gy),
-                gx,
-                gy,
-                mask: this.selectedMask
-            };
+            if (col === 0 && row === 0) {
+                return {
+                    x: gx - half,
+                    y: gy - half,
+                    gx,
+                    gy,
+                    mask: this.selectedMask,
+                    direction: null
+                };
+            }
+
+            const direction = NEIGHBOURS.find(item => item.col === col && item.row === row);
+            if (!direction) return null;
+
+            const mask = this.neighbourMaskFor(direction.key);
+            // The margin shows the visible half/quarter of the neighbour tile,
+            // so map the cursor into that tile's local coordinate space.
+            const x = col === -1 ? gx + size - half
+                : col === 1 ? gx - half - size
+                : gx - half;
+            const y = row === -1 ? gy + size - half
+                : row === 1 ? gy - half - size
+                : gy - half;
+
+            return { x, y, gx, gy, mask, direction: direction.key };
         },
 
 
@@ -614,18 +725,18 @@
                 return;
             }
 
-            const tile = this.activeTile();
+            const tile = grid.tiles[point.mask];
             if (!tile) return;
 
             const erase = e.button === 2 || this.tool === 'eraser';
 
             if (this.tool === 'fill') {
-                this.beginHistory(this.selectedMask);
+                this.beginHistory(point.mask);
                 this.floodFill(tile, point, erase);
-                this.markAllEdges(this.selectedMask);
+                this.markAllEdges(point.mask);
                 this.syncTileEdges();
                 this.commitHistory();
-                this.afterMasksChanged(new Set([this.selectedMask]));
+                this.afterMasksChanged(new Set([point.mask]));
                 this.renderLayers();
                 return;
             }
@@ -692,9 +803,8 @@
                 this.els.dsCoords.textContent = '—';
                 return;
             }
-            this.els.dsCoords.textContent = point.mask
-                ? `${point.x}, ${point.y} · tile #${point.mask}`
-                : `${point.x}, ${point.y} · empty`;
+            const suffix = point.direction ? ` · neighbour ${point.direction}` : '';
+            this.els.dsCoords.textContent = `${point.x}, ${point.y} · tile #${point.mask}${suffix}`;
         },
 
         strokeLine(from, to, erase, changed) {
@@ -716,7 +826,9 @@
 
         paintAt(point, erase, changed) {
             if (!point) return;
-            const tile = this.activeTile();
+            const grid = this.activeGrid();
+            const mask = point.mask;
+            const tile = grid && grid.tiles[mask];
             if (!tile) return;
             const layer = tile.layers[tile.activeLayer] || tile.layers[0];
             if (!layer) return;
@@ -736,7 +848,7 @@
                     return;
                 }
                 positions.set(`${px},${py}`, { x: px, y: py });
-                this.trackTouchedEdge(this.selectedMask, px, py, size);
+                this.trackTouchedEdge(mask, px, py, size);
             };
 
             for (let oy = start; oy < start + brush; oy++) {
@@ -756,7 +868,7 @@
             }
 
             if (!positions.size) return;
-            this.rememberHistoryTile(this.selectedMask);
+            this.rememberHistoryTile(mask);
             if (!erase && !layer.visible) layer.visible = true;
             const ctx = layer.canvas.getContext('2d');
 
@@ -773,7 +885,7 @@
                 ctx.restore();
             }
 
-            changed.add(this.selectedMask);
+            changed.add(mask);
         },
 
         trackTouchedEdge(mask, x, y, size) {
@@ -893,8 +1005,9 @@
                     keyMask = 1 | 2;
                 }
                 const result = [];
-                for (let candidate = 1; candidate <= 15; candidate++) {
+                for (let candidate = 0; candidate <= 15; candidate++) {
                     if (candidate === sourceMask) continue;
+                    if (candidate === 0 && !this.maskHasArt(grid, 0)) continue;
                     if ((candidate & keyMask) === required) result.push(candidate);
                 }
                 return result;
@@ -1022,8 +1135,9 @@
                     changed.add(sourceMask);
                 });
 
-                for (let candidate = 1; candidate <= 15; candidate++) {
+                for (let candidate = 0; candidate <= 15; candidate++) {
                     if (candidate === sourceMask) continue;
+                    if (candidate === 0 && !this.maskHasArt(grid, 0)) continue;
                     if ((candidate & info.targetBit) !== (sourceMask & info.bit ? info.targetBit : 0)) continue;
                     Core.getVariations(grid, candidate).forEach((tile, variation) => {
                         if (!tile) return;
@@ -1116,7 +1230,7 @@
 
         pickColor(point) {
             const grid = this.activeGrid();
-            if (!grid || !point || !point.mask) {
+            if (!grid || !point || point.mask == null) {
                 this.notify('info', 'That cell is empty — there is no tile colour to pick.');
                 return;
             }
@@ -1599,7 +1713,6 @@
                 const cell = document.createElement('div');
                 cell.className = 'ds-atlas-cell';
                 cell.dataset.mask = mask;
-                if (mask === 0) cell.classList.add('is-empty');
                 if (mask === this.selectedMask) cell.classList.add('active');
 
                 const wrap = document.createElement('div');
@@ -1612,36 +1725,32 @@
 
                 const indexBadge = document.createElement('span');
                 indexBadge.className = 'ds-atlas-index';
-                indexBadge.textContent = mask === 0 ? 'BG' : `#${mask}`;
+                indexBadge.textContent = `#${mask}`;
                 wrap.appendChild(indexBadge);
 
-                if (mask !== 0) {
-                    const variationCount = Core.getVariations(grid, mask).length;
-                    if (variationCount > 1) {
-                        const varBadge = document.createElement('span');
-                        varBadge.className = 'ds-atlas-var-count';
-                        varBadge.textContent = `×${variationCount}`;
-                        wrap.appendChild(varBadge);
-                    }
+                const variationCount = Core.getVariations(grid, mask).length;
+                if (variationCount > 1) {
+                    const varBadge = document.createElement('span');
+                    varBadge.className = 'ds-atlas-var-count';
+                    varBadge.textContent = `×${variationCount}`;
+                    wrap.appendChild(varBadge);
                 }
 
-                if (mask !== 0) {
-                    const bitDots = document.createElement('span');
-                    bitDots.className = 'ds-atlas-bit-dots';
-                    [1, 2, 4, 8].forEach(bit => {
-                        const dot = document.createElement('i');
-                        dot.className = mask & bit ? 'on' : '';
-                        bitDots.appendChild(dot);
-                    });
-                    wrap.appendChild(bitDots);
-                }
+                const bitDots = document.createElement('span');
+                bitDots.className = 'ds-atlas-bit-dots';
+                [1, 2, 4, 8].forEach(bit => {
+                    const dot = document.createElement('i');
+                    dot.className = mask & bit ? 'on' : '';
+                    bitDots.appendChild(dot);
+                });
+                wrap.appendChild(bitDots);
 
                 const meta = document.createElement('div');
                 meta.className = 'ds-atlas-meta';
 
                 const name = document.createElement('span');
                 name.className = 'ds-atlas-name';
-                name.textContent = mask === 0 ? 'Background' : Core.MASK_SHORT[mask];
+                name.textContent = Core.MASK_SHORT[mask];
                 name.title = Core.MASK_NAMES[mask];
 
                 meta.appendChild(name);
@@ -1654,13 +1763,8 @@
                 ctx.imageSmoothingEnabled = false;
                 ctx.clearRect(0, 0, size, size);
 
-                if (mask === 0) {
-                    ctx.fillStyle = this.project.background || '#c99a63';
-                    ctx.fillRect(0, 0, size, size);
-                } else {
-                    const tileCanvas = Core.getTileCanvas(grid, mask);
-                    if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
-                }
+                const tileCanvas = Core.getTileCanvas(grid, mask);
+                if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
             });
 
             this.renderAtlasMeta();
@@ -1670,14 +1774,14 @@
         renderAtlasMeta() {
             const grid = this.activeGrid();
             if (!grid) return;
-            const count = grid.mode === 9 ? 9 : 15;
+            const count = grid.mode === 9 ? 9 : 16;
             const masks = grid.mode === 9 ? Core.MASKS_9 : Core.MASKS_15;
             const variationTotal = masks.reduce((sum, mask) => {
-                return sum + (mask === 0 ? 0 : Core.getVariations(grid, mask).length);
+                return sum + Core.getVariations(grid, mask).length;
             }, 0);
             this.els.dsAtlasSubtitle.textContent =
                 `${grid.name} · ${variationTotal} tile${variationTotal === 1 ? '' : 's'} · ${this.tileSize()} px` +
-                (grid.mode === 9 ? ' · 9-tile set' : ' · 15-tile set') +
+                (grid.mode === 9 ? ' · 9-tile set' : ' · 16-tile set') +
                 (variationTotal > count ? ' · variations' : '');
 
             this.els.dsAtlasBadges.innerHTML = '';
@@ -1701,14 +1805,13 @@
             const size = this.tileSize();
             const masks = grid.mode === 9 ? Core.MASKS_9 : Core.MASKS_15;
             list.innerHTML = '';
-            this.els.dsAtlasListCount.textContent = String(masks.filter(mask => mask !== 0).length);
+            this.els.dsAtlasListCount.textContent = String(masks.length);
 
             masks.forEach(mask => {
                 const row = document.createElement('button');
                 row.type = 'button';
                 row.className = 'ds-atlas-list-item';
                 row.dataset.mask = mask;
-                if (mask === 0) row.classList.add('is-empty');
                 if (mask === this.selectedMask) row.classList.add('active');
 
                 const thumbWrap = document.createElement('span');
@@ -1721,12 +1824,12 @@
                 const text = document.createElement('span');
                 text.className = 'ds-atlas-list-text';
                 const name = document.createElement('strong');
-                name.textContent = mask === 0 ? 'Background' : Core.MASK_SHORT[mask];
+                name.textContent = Core.MASK_SHORT[mask];
                 const sub = document.createElement('small');
-                const varCount = mask === 0 ? 1 : Core.getVariations(grid, mask).length;
-                const varActive = mask === 0 ? 0 : Core.getActiveVariationIndex(grid, mask);
+                const varCount = Core.getVariations(grid, mask).length;
+                const varActive = Core.getActiveVariationIndex(grid, mask);
                 sub.textContent = mask === 0
-                    ? 'empty / background cell'
+                    ? `#0 · ${Core.MASK_NAMES[0]} / empty cell${varCount > 1 ? ` · ${varCount} variations` : ''}`
                     : `#${mask} · ${Core.MASK_NAMES[mask]}${varCount > 1 ? ` · ${varCount} variations` : ''}`;
                 text.append(name, sub);
 
@@ -1738,16 +1841,14 @@
                     ? (varCount > 1 ? `Editing · V${varActive + 1}` : 'Editing')
                     : '';
                 state.appendChild(stateLabel);
-                if (mask !== 0) {
-                    const bits = document.createElement('span');
-                    bits.className = 'ds-atlas-list-bits';
-                    [1, 2, 4, 8].forEach(bit => {
-                        const dot = document.createElement('i');
-                        dot.className = mask & bit ? 'on' : '';
-                        bits.appendChild(dot);
-                    });
-                    state.appendChild(bits);
-                }
+                const bits = document.createElement('span');
+                bits.className = 'ds-atlas-list-bits';
+                [1, 2, 4, 8].forEach(bit => {
+                    const dot = document.createElement('i');
+                    dot.className = mask & bit ? 'on' : '';
+                    bits.appendChild(dot);
+                });
+                state.appendChild(bits);
 
                 row.append(thumbWrap, text, state);
                 list.appendChild(row);
@@ -1755,13 +1856,8 @@
                 const ctx = canvas.getContext('2d');
                 ctx.imageSmoothingEnabled = false;
                 ctx.clearRect(0, 0, size, size);
-                if (mask === 0) {
-                    ctx.fillStyle = this.project.background || '#c99a63';
-                    ctx.fillRect(0, 0, size, size);
-                } else {
-                    const tileCanvas = Core.getTileCanvas(grid, mask);
-                    if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
-                }
+                const tileCanvas = Core.getTileCanvas(grid, mask);
+                if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
             });
         },
 
@@ -1775,13 +1871,8 @@
                 const ctx = canvas.getContext('2d');
                 ctx.imageSmoothingEnabled = false;
                 ctx.clearRect(0, 0, size, size);
-                if (mask === 0) {
-                    ctx.fillStyle = this.project.background || '#c99a63';
-                    ctx.fillRect(0, 0, size, size);
-                } else {
-                    const tileCanvas = Core.getTileCanvas(grid, mask);
-                    if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
-                }
+                const tileCanvas = Core.getTileCanvas(grid, mask);
+                if (tileCanvas) ctx.drawImage(tileCanvas, 0, 0);
             };
 
             const cell = this.els.dsAtlasGrid.querySelector(`.ds-atlas-cell[data-mask="${mask}"]`);
@@ -1793,6 +1884,7 @@
 
         renderEditor() {
             const tile = this.activeTile();
+            const grid = this.activeGrid();
             const size = this.tileSize();
             const internal = size * 2;
             const half = Math.floor(size / 2);
@@ -1807,19 +1899,19 @@
             ctx.clearRect(0, 0, internal, internal);
             ctx.imageSmoothingEnabled = false;
 
-            // Centre tile at full size, plus half of each neighbouring copy at
-            // 50% opacity. The canvas is 2×tile, so the margin is half a tile
-            // on every side while still showing the seam.
+            // Centre tile at full size, plus the visible half/quarter of a
+            // compatible neighbour in each margin. The neighbour can be
+            // switched by clicking its # label over the canvas.
             if (tile) {
                 const composite = Core.compositeTile(tile, size);
                 ctx.save();
                 ctx.globalAlpha = 0.5;
-                for (let row = -1; row <= 1; row++) {
-                    for (let col = -1; col <= 1; col++) {
-                        if (row === 0 && col === 0) continue;
-                        ctx.drawImage(composite, half + col * size, half + row * size);
-                    }
-                }
+                NEIGHBOURS.forEach(direction => {
+                    const mask = this.neighbourMaskFor(direction.key);
+                    const neighbour = Core.getTileCanvas(grid, mask);
+                    if (!neighbour) return;
+                    ctx.drawImage(neighbour, half + direction.col * size, half + direction.row * size);
+                });
                 ctx.restore();
                 ctx.drawImage(composite, half, half);
             }
@@ -1842,6 +1934,107 @@
             }
 
             this.renderTileInfo();
+            this.renderNeighbourLabels();
+        },
+
+        renderNeighbourLabels() {
+            const container = this.els.dsNeighbourLabels;
+            if (!container) return;
+
+            if (container.childElementCount !== NEIGHBOURS.length) {
+                container.innerHTML = '';
+                NEIGHBOURS.forEach(direction => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'ds-neighbour-chip';
+                    chip.dataset.key = direction.key;
+                    container.appendChild(chip);
+                });
+            }
+
+            NEIGHBOURS.forEach(direction => {
+                const chip = container.querySelector(`.ds-neighbour-chip[data-key="${direction.key}"]`);
+                if (!chip) return;
+                const mask = this.neighbourMaskFor(direction.key);
+                const options = this.compatibleNeighbours(direction.key, this.selectedMask);
+                chip.textContent = `#${mask}`;
+                chip.title = `${direction.label} neighbour: #${mask}. Click to load another compatible tile (${options.map(value => `#${value}`).join(', ')}).`;
+                chip.style.left = `${direction.col === 0 ? 50 : (direction.col < 0 ? 12.5 : 87.5)}%`;
+                chip.style.top = `${direction.row === 0 ? 50 : (direction.row < 0 ? 12.5 : 87.5)}%`;
+                chip.dataset.mask = String(mask);
+            });
+        },
+
+        openNeighbourPicker(directionKey, anchor) {
+            const direction = NEIGHBOURS.find(item => item.key === directionKey);
+            if (!direction) return;
+            this.closeNeighbourPicker();
+
+            const grid = this.activeGrid();
+            if (!grid) return;
+            const options = this.compatibleNeighbours(directionKey, this.selectedMask);
+            const current = this.neighbourMaskFor(directionKey);
+            const size = this.tileSize();
+
+            const popover = document.createElement('div');
+            popover.className = 'ds-neighbour-popover';
+
+            const head = document.createElement('div');
+            head.className = 'ds-neighbour-popover-head';
+            head.innerHTML = `<strong>${direction.label} neighbour</strong><span>Tile #${this.selectedMask} connects to these</span>`;
+            popover.appendChild(head);
+
+            const list = document.createElement('div');
+            list.className = 'ds-neighbour-options';
+            options.forEach(mask => {
+                const option = document.createElement('button');
+                option.type = 'button';
+                option.className = 'ds-neighbour-option' + (mask === current ? ' active' : '');
+                option.title = `Load #${mask} · ${Core.MASK_NAMES[mask]}`;
+
+                const thumb = document.createElement('canvas');
+                thumb.width = size;
+                thumb.height = size;
+                const tileCanvas = Core.getTileCanvas(grid, mask);
+                if (tileCanvas) {
+                    const thumbCtx = thumb.getContext('2d');
+                    thumbCtx.imageSmoothingEnabled = false;
+                    thumbCtx.drawImage(tileCanvas, 0, 0);
+                }
+
+                const label = document.createElement('span');
+                label.className = 'ds-neighbour-option-label';
+                label.textContent = `#${mask}`;
+
+                option.append(thumb, label);
+                option.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.setNeighbourMask(directionKey, mask);
+                });
+                list.appendChild(option);
+            });
+            popover.appendChild(list);
+            document.body.appendChild(popover);
+            this.neighbourPicker = popover;
+
+            const rect = anchor.getBoundingClientRect();
+            const popRect = popover.getBoundingClientRect();
+            let left = rect.left + rect.width / 2 - popRect.width / 2;
+            let top = rect.bottom + 8;
+            left = Core.clamp(left, 8, window.innerWidth - popRect.width - 8);
+            if (top + popRect.height > window.innerHeight - 8) {
+                top = rect.top - popRect.height - 8;
+            }
+            top = Core.clamp(top, 8, window.innerHeight - popRect.height - 8);
+            popover.style.left = `${left}px`;
+            popover.style.top = `${top}px`;
+        },
+
+        closeNeighbourPicker() {
+            if (!this.neighbourPicker) return;
+            this.neighbourPicker.remove();
+            this.neighbourPicker = null;
         },
 
         renderTileInfo() {
@@ -1854,8 +2047,10 @@
             this.els.dsEditorTitle.textContent = `Tile #${mask} — ${Core.MASK_SHORT[mask]}` +
                 (variations.length > 1 ? ` · Var ${variationIndex + 1}/${variations.length}` : '');
             this.els.dsEditorSubtitle.textContent = mask === 15
-                ? 'Fully filled tile — used in the middle of a terrain chunk. The half-tile margin shows the seam at 50% opacity.'
-                : `${Core.MASK_NAMES[mask]}. The half-tile margin shows the neighbouring copy at 50% opacity so you can keep the seam continuous.`;
+                ? 'Fully filled tile — used in the middle of a terrain chunk. Click a margin # label to load any compatible neighbour.'
+                : mask === 0
+                    ? 'Base fill — used where all four map corners are empty. Click a margin # label to load any compatible neighbour.'
+                    : `${Core.MASK_NAMES[mask]}. Click a margin # label to load a compatible neighbour and keep the seam continuous.`;
 
             this.els.dsMaskTitle.textContent = Core.MASK_NAMES[mask];
             const bits = [];
@@ -2178,8 +2373,6 @@
                             (this.getCell(grid, gx, gy) ? 8 : 0);
 
                         const renderMask = Core.resolveMask(grid, mask);
-                        if (!renderMask) continue;
-
                         const variations = Core.getVariations(grid, renderMask);
                         let variation = 0;
                         if (variations.length > 1) {
@@ -2518,7 +2711,7 @@
                 const data = JSON.parse(text);
                 const project = await Core.deserializeProject(data);
                 this.project = project;
-                this.selectedMask = project.selectedMask || 15;
+                this.selectedMask = project.selectedMask != null ? project.selectedMask : 15;
                 this.ensureSelectedMask();
                 this.resetHistory();
                 this.renderAll();
@@ -2577,7 +2770,7 @@
             const filename = `${Core.safeFilename(this.project.name)}-${Core.safeFilename(grid.name)}-${rendered.layout.cols}x${rendered.layout.rows}.png`;
             Core.downloadCanvas(rendered.canvas, filename);
             const variationCols = rendered.layout.variationCols || 1;
-            const maskCount = rendered.layout.masks.filter(mask => mask !== 0).length;
+            const maskCount = rendered.layout.masks.length;
             this.notify('success', `Exported ${rendered.layout.cols}×${rendered.layout.rows} atlas (${maskCount} masks${variationCols > 1 ? `, ${variationCols} variation columns` : ''})`);
         },
 
@@ -2619,7 +2812,7 @@
             const allVariations = this.els.dsExportVariations.value === 'all';
             this.els.dsExportHint.innerHTML = (mode === 9
                 ? 'The 3×3 atlas contains the 9 outer-edge masks: corners, edges and fill.'
-                : 'The 4×4 atlas contains 15 authored masks plus one background cell.') +
+                : 'The 4×4 atlas contains all 16 masks; #0 is the base/background fill.') +
                 (allVariations ? ' Variations are added as extra columns beside each mask.' : ' Only the active variation of each tile is exported.');
         },
 
@@ -2679,6 +2872,7 @@
 
             if (e.key === 'Escape') {
                 this.closeAllModals();
+                this.closeNeighbourPicker();
                 this.drawing = false;
                 this.previewPainting = false;
                 return;
@@ -2754,10 +2948,6 @@
             if (!grid) return;
             if (grid.mode === 9 && !Core.SET_9.has(mask)) {
                 this.notify('info', 'That tile is not part of the 9-tile set. Switch the grid to 15 tiles to edit it.');
-                return;
-            }
-            if (mask === 0) {
-                this.notify('info', 'The empty/background cell is not an editable tile');
                 return;
             }
             this.selectedMask = mask;

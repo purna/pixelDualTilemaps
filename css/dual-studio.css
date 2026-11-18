@@ -1225,6 +1225,118 @@ a:hover {
     box-sizing: border-box;
 }
 
+.ds-neighbour-labels {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.ds-neighbour-chip {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(67, 217, 255, 0.45);
+    background: rgba(8, 12, 24, 0.78);
+    color: var(--cyan);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(3px);
+}
+
+.ds-neighbour-chip:hover,
+.ds-neighbour-chip:focus-visible {
+    border-color: var(--cyan);
+    background: rgba(67, 217, 255, 0.16);
+    color: #eafcff;
+    outline: none;
+}
+
+.ds-neighbour-popover {
+    position: fixed;
+    z-index: 5000;
+    width: 228px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--bg-1);
+    box-shadow: var(--shadow);
+}
+
+.ds-neighbour-popover-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.ds-neighbour-popover-head strong {
+    font-size: 11px;
+    color: var(--text);
+}
+
+.ds-neighbour-popover-head span {
+    font-size: 9px;
+    color: var(--faint);
+}
+
+.ds-neighbour-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    max-height: 280px;
+    overflow: auto;
+}
+
+.ds-neighbour-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+}
+
+.ds-neighbour-option:hover,
+.ds-neighbour-option:focus-visible {
+    border-color: var(--line-soft);
+    background: var(--bg-3);
+    outline: none;
+}
+
+.ds-neighbour-option.active {
+    border-color: var(--green);
+    background: var(--green-soft);
+}
+
+.ds-neighbour-option canvas {
+    width: 34px;
+    height: 34px;
+    border-radius: 4px;
+    image-rendering: pixelated;
+    background:
+        conic-gradient(from 0deg, #1a1e30 25%, #2a2f4a 0 50%, #1a1e30 0 75%, #2a2f4a 0) 0 0 / 8px 8px;
+}
+
+.ds-neighbour-option-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+}
+
+.ds-neighbour-option.active .ds-neighbour-option-label {
+    color: var(--green);
+}
+
 .ds-zoom-group {
     display: flex;
     align-items: center;

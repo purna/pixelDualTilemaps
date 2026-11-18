@@ -6,7 +6,7 @@
 window.DualCore = (function () {
     'use strict';
 
-    const VERSION = 2;
+    const VERSION = 3;
     const FORMAT = 'dual-grid-studio';
     const STORAGE_KEY = 'pixelDualTilemaps:dual-studio:v2';
     const CREDIT = {
@@ -30,7 +30,7 @@ window.DualCore = (function () {
     const MASKS_15 = Array.from({ length: 16 }, (_, i) => i);
 
     const MASK_NAMES = {
-        0: 'Empty',
+        0: 'Base fill',
         1: 'Top-left corner',
         2: 'Top-right corner',
         3: 'Top edge',
@@ -49,7 +49,7 @@ window.DualCore = (function () {
     };
 
     const MASK_SHORT = {
-        0: 'Background', 1: 'TL', 2: 'TR', 3: 'Top', 4: 'BL',
+        0: 'Base', 1: 'TL', 2: 'TR', 3: 'Top', 4: 'BL',
         5: 'Left', 6: 'Diag', 7: 'Inner BR', 8: 'BR', 9: 'Diag',
         10: 'Right', 11: 'Inner BL', 12: 'Bottom', 13: 'Inner TR',
         14: 'Inner TL', 15: 'Fill'
@@ -584,14 +584,71 @@ window.DualCore = (function () {
         }
     }
 
+    function paintSampleBaseTile(ctx, size, seed) {
+        // #0 is the base/background fill. It uses the dirt palette so an empty
+        // map corner has real ground art instead of a flat background colour.
+        const image = ctx.createImageData(size, size);
+        const data = image.data;
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const h = hash(x, y, seed + 911);
+                let color = pick(SAMPLE.dirt, Math.floor(h * SAMPLE.dirt.length));
+                if (h > 0.94) color = SAMPLE.dirtLight;
+                else if (h < 0.07) color = SAMPLE.dirtDark;
+
+                const rgb = hexToRgb(color);
+                const index = (y * size + x) * 4;
+                data[index] = rgb.r;
+                data[index + 1] = rgb.g;
+                data[index + 2] = rgb.b;
+                data[index + 3] = 255;
+            }
+        }
+
+        ctx.putImageData(image, 0, 0);
+
+        // Scattered pebbles and grit, denser than the edge tiles so the base
+        // still reads as dirt when it fills a large empty area.
+        const speckCount = Math.max(4, Math.round(size * size / 80));
+        for (let i = 0; i < speckCount; i++) {
+            const x = Math.floor(hash(i + 3, 0, seed + 19) * size);
+            const y = Math.floor(hash(i + 17, 0, seed + 23) * size);
+            const h = hash(x, y, seed + 29);
+            ctx.fillStyle = h > 0.5 ? SAMPLE.dirtDark : SAMPLE.dirtLight;
+            ctx.fillRect(x, y, 1, 1);
+            if (size >= 24 && h > 0.78) ctx.fillRect(x + 1, y, 1, 1);
+        }
+    }
+
+    function tileHasUserPixels(tile) {
+        if (!tile || !Array.isArray(tile.layers)) return false;
+        return tile.layers.some(layer => {
+            if (!layer.canvas || layer.system || layer.name === 'Edge sync') return false;
+            const ctx = layer.canvas.getContext('2d');
+            const data = ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height).data;
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i]) return true;
+            }
+            return false;
+        });
+    }
+
     function paintSampleTiles(grid, kind, size) {
         grid.tiles.forEach((tile, mask) => {
-            if (mask === 0) return;
             const layer = tile.layers[0];
             layer.canvas.width = size;
             layer.canvas.height = size;
             const ctx = layer.canvas.getContext('2d');
             const seed = kind === 'inner' ? 733 : 419;
+            if (mask === 0) {
+                if (kind === 'outer') {
+                    paintSampleBaseTile(ctx, size, seed);
+                } else {
+                    ctx.clearRect(0, 0, size, size);
+                }
+                return;
+            }
             if (kind === 'inner') {
                 paintSampleInnerTile(ctx, size, mask, seed);
             } else {
@@ -884,6 +941,21 @@ window.DualCore = (function () {
                 }
             }
 
+            // Version 2 and older treated mask 0 as an empty background cell.
+            // Give older outer grids a usable base fill so #0 can take part in
+            // edge sync, the margin slots and atlas exports.
+            if (Number(data.version || 0) < 3 && grid.role === 'outer') {
+                const base = grid.tiles[0];
+                if (base && !tileHasUserPixels(base)) {
+                    const layer = base.layers[0] || createLayer(size, 'Base');
+                    if (!base.layers.length) base.layers = [layer];
+                    layer.canvas.width = size;
+                    layer.canvas.height = size;
+                    paintSampleBaseTile(layer.canvas.getContext('2d'), size, 419);
+                    invalidateGrid(grid);
+                }
+            }
+
             grid._size = size;
             project.grids.push(grid);
         }
@@ -894,7 +966,7 @@ window.DualCore = (function () {
 
         const requestedGrid = project.grids.find(grid => grid.id === data.activeGridId);
         project.activeGridId = requestedGrid ? requestedGrid.id : project.grids[0].id;
-        project.selectedMask = clamp(Number(data.selectedMask) || 15, 1, 15);
+        project.selectedMask = clamp(Number(data.selectedMask) || 0, 0, 15);
 
         return project;
     }
@@ -930,9 +1002,7 @@ window.DualCore = (function () {
         let variationCols = 1;
         if (allVariations) {
             layout.masks.forEach(mask => {
-                if (mask !== 0) {
-                    variationCols = Math.max(variationCols, getVariations(grid, mask).length);
-                }
+                variationCols = Math.max(variationCols, getVariations(grid, mask).length);
             });
         }
 
@@ -951,8 +1021,6 @@ window.DualCore = (function () {
         }
 
         layout.masks.forEach((mask, index) => {
-            if (mask === 0) return;
-
             const baseCol = index % layout.cols;
             const row = Math.floor(index / layout.cols);
 

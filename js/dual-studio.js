@@ -74,6 +74,7 @@
         activePointerId: null,
         previewPainting: false,
         previewValue: 1,
+        previewPointerButton: null,
         hoverCell: null,
         previewFrame: null,
         saveTimer: null,
@@ -2846,6 +2847,7 @@
             const cell = this.previewCell(e);
             if (!cell) return;
             this.previewPainting = true;
+            this.previewPointerButton = e.button;
             this.previewValue = (e.button === 2 || e.shiftKey) ? 0 : 1;
             this.hoverCell = cell;
             this.paintPreviewCell(cell, this.previewValue);
@@ -2860,6 +2862,10 @@
             const cell = this.previewCell(e);
             this.hoverCell = cell;
             if (this.previewPainting && cell) {
+                // Keep Shift working mid-stroke, and let right-drag keep erasing.
+                if (this.previewPointerButton === 0) {
+                    this.previewValue = e.shiftKey ? 0 : 1;
+                }
                 this.paintPreviewCell(cell, this.previewValue);
             } else {
                 this.schedulePreview();
@@ -2867,6 +2873,7 @@
         },
 
         onPreviewPointerUp(e) {
+            this.previewPointerButton = null;
             if (!this.previewPainting) return;
             this.previewPainting = false;
             this.schedulePreview();
